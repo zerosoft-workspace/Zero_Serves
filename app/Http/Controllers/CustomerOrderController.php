@@ -1,27 +1,38 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Table;
-use Illuminate\Http\Request;
 use App\Models\Category;
-
+use App\Models\WaiterCall;
+use App\Models\Payment;
+use Illuminate\Http\Request;
 
 class CustomerOrderController extends Controller
 {
-    public function index()
+    // Menü sayfası
+    public function index(string $token)
     {
-        // Sadece aktif ürünleri çekecek
+        $table = Table::where('token', $token)->firstOrFail();
+
         $categories = Category::with([
             'products' => function ($q) {
                 $q->where('is_active', true);
             }
         ])->get();
 
-        return view('customer.menu', compact('categories'));
+        // Bu masanın aktif siparişleri
+        $orders = Order::with('items')
+            ->where('table_id', $table->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('customer.menu', compact('categories', 'table', 'orders'));
     }
+
     // Sepete ekle
     public function addToCart(Request $request, string $token)
     {
@@ -73,11 +84,12 @@ class CustomerOrderController extends Controller
             return back()->with('error', 'Sepetiniz boş');
 
         foreach ($cart as $pid => $row) {
-            $p = \App\Models\Product::find($pid);
+            $p = Product::find($pid);
             if (!$p || $p->stock < $row['qty']) {
                 return back()->with('error', $row['name'] . ' için yeterli stok yok.');
             }
         }
+
         $total = 0;
         foreach ($cart as $pid => $row) {
             $total += $row['price'] * $row['qty'];
@@ -98,18 +110,50 @@ class CustomerOrderController extends Controller
                 'price' => $row['price'],
                 'line_total' => $row['price'] * $row['qty'],
             ]);
-        }
-        foreach ($cart as $pid => $row) {
-            $p = \App\Models\Product::find($pid);
-            $p->decrement('stock', $row['qty']);
+            Product::find($pid)?->decrement('stock', $row['qty']);
         }
 
-        // Masayı "order_pending" yapalım (ileride garson paneli görecek)
         $table->update(['status' => 'order_pending']);
 
         session()->forget('cart');
 
         return redirect()->route('customer.table.token', $token)
             ->with('success', 'Siparişiniz alındı! Garson onaylayacaktır.');
+    }
+
+    // 🚨 Garson Çağır
+    public function callWaiter(Request $request, string $token)
+    {
+        $table = Table::where('token', $token)->firstOrFail();
+
+        WaiterCall::create([
+            'table_id' => $table->id,
+            'status' => 'new',
+        ]);
+
+        return back()->with('success', 'Garson çağrısı gönderildi.');
+    }
+
+    // 💳 Ödeme İsteği
+    public function pay(Request $request, string $token)
+    {
+        $table = Table::where('token', $token)->firstOrFail();
+
+        $total = Order::where('table_id', $table->id)
+            ->where('payment_status', 'unpaid')
+            ->sum('total_price');
+
+        if ($total <= 0) {
+            return back()->with('error', 'Ödenecek sipariş bulunamadı.');
+        }
+
+        Payment::create([
+            'table_id' => $table->id,
+            'amount' => $total,
+            'method' => 'cash', // şimdilik sabit, ileride online seçilebilir
+            'status' => 'pending',
+        ]);
+
+        return back()->with('success', 'Ödeme isteğiniz alındı, garson yanınıza gelecek.');
     }
 }

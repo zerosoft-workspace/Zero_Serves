@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Table;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Illuminate\Support\Facades\Storage;
 
 class TableController extends Controller
 {
@@ -16,45 +14,39 @@ class TableController extends Controller
         return view('admin.tables.index', compact('tables'));
     }
 
-    // Yeni masa oluştur + QR üret
+    // Yeni masa oluştur
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:50',
         ]);
 
-        $table = Table::create([
+        Table::create([
             'name' => $request->name,
-            'token' => bin2hex(random_bytes(16)), // 32 karakterlik benzersiz token
+            'token' => bin2hex(random_bytes(16)), // benzersiz token
             'status' => 'empty'
         ]);
 
         return redirect()->back()->with('success', 'Masa oluşturuldu');
     }
-    public function showByToken(string $token)
+    public function clear(Table $table)
     {
-        $table = Table::where('token', $token)->firstOrFail();
+        // Masanın aktif siparişlerini sil
+        $table->orders()->whereIn('status', ['pending', 'preparing', 'delivered'])->delete();
 
+        // Masayı boş hale getir → enum'da tanımlı olan değer: "empty"
+        $table->status = 'empty';
+        $table->save();
 
-        // Oturumu bu masa ile ilişkilendir
-        session(['table_id' => $table->id, 'table_token' => $token]);
-
-        // Ürünleri kategorileriyle al
-        $categories = \App\Models\Category::with([
-            'products' => function ($q) {
-                $q->where('is_active', true);
-            }
-        ])->get();
-
-
-        return view('customer.menu', compact('table', 'categories'));
+        return back()->with('success', 'Masa başarıyla temizlendi.');
     }
 
+
+    // Masa sil
     public function destroy($id)
     {
-        $table = \App\Models\Table::findOrFail($id);
+        $table = Table::findOrFail($id);
 
-        // Açık sipariş var mı? (ödeme tamamlanmamış akışlar)
         $hasOpen = $table->orders()
             ->whereIn('status', ['pending', 'preparing', 'delivered'])
             ->exists();
@@ -63,16 +55,8 @@ class TableController extends Controller
             return back()->with('error', 'Bu masada devam eden sipariş var. Önce siparişi kapatın (Ödendi).');
         }
 
-        $table->delete(); // (Not: orders.table_id FK’iniz cascade ise geçmiş siparişler de silinir)
+        $table->delete();
 
         return back()->with('success', 'Masa silindi.');
-    }
-
-
-    // QR okutunca müşteri tarafı
-    public function showCustomerPage($id)
-    {
-        $table = Table::findOrFail($id);
-        return view('customer.menu', compact('table'));
     }
 }

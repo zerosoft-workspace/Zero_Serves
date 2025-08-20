@@ -5,15 +5,18 @@ use App\Http\Controllers\TableController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WaiterController as WaiterController;
+use App\Http\Controllers\WaiterController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 
-
+// =========================
 // Admin tarafı
+// =========================
 Route::get('/admin/tables', [TableController::class, 'index'])->name('admin.tables');
 Route::post('/admin/tables', [TableController::class, 'store'])->name('admin.tables.store');
 Route::delete('/admin/tables/{id}', [TableController::class, 'destroy'])->name('admin.tables.destroy');
+Route::post('/admin/tables/{table}/clear', [App\Http\Controllers\TableController::class, 'clear'])
+    ->name('admin.tables.clear');
 
 
 Route::prefix('admin')->group(function () {
@@ -30,18 +33,28 @@ Route::prefix('admin')->group(function () {
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('admin.products.destroy');
 });
 
-// Müşteri tarafı (QR kod okutulunca açılır)
-Route::get('/customer/table/{token}', [TableController::class, 'showByToken'])->name('customer.table.token');
-
+// =========================
+// Landing Page
+// =========================
 Route::get('/', function () {
-    return view('welcome');
-});
-Route::post('/customer/{token}/cart/add', [CustomerOrderController::class, 'addToCart'])->name('customer.cart.add');
-Route::post('/customer/{token}/cart/clear', [CustomerOrderController::class, 'clearCart'])->name('customer.cart.clear');
-Route::post('/customer/{token}/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
-Route::post('/customer/{token}/cart/remove/{productId}', [CustomerOrderController::class, 'removeFromCart'])->name('customer.cart.remove');
+    return view('landing');
+})->name('landing');
 
+// =========================
+// Müşteri tarafı (QR kod okutulunca açılır)
+// =========================
+Route::get('/table/{token}', [CustomerOrderController::class, 'index'])->name('customer.table.token');
 
+Route::post('/table/{token}/cart/add', [CustomerOrderController::class, 'addToCart'])->name('customer.cart.add');
+Route::post('/table/{token}/cart/remove/{productId}', [CustomerOrderController::class, 'removeFromCart'])->name('customer.cart.remove');
+Route::post('/table/{token}/cart/clear', [CustomerOrderController::class, 'clearCart'])->name('customer.cart.clear');
+Route::post('/table/{token}/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
+Route::post('/table/{token}/call-waiter', [CustomerOrderController::class, 'callWaiter'])->name('customer.call');
+Route::post('/table/{token}/pay', [CustomerOrderController::class, 'pay'])->name('customer.pay');
+
+// =========================
+// Garson Paneli
+// =========================
 Route::prefix('waiter')->group(function () {
     Route::get('/', [WaiterController::class, 'index'])->name('waiter.index');
     Route::get('/table/{id}', [WaiterController::class, 'showTable'])->name('waiter.table');

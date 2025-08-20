@@ -75,8 +75,9 @@
             @endforeach
         </div>
 
-        {{-- Sepet --}}
+        {{-- Sepet & Sipariş --}}
         <div class="col-12 col-lg-4">
+            {{-- Sepet --}}
             <div id="cart" class="card shadow-sm cart-sticky">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Sepet</strong>
@@ -98,8 +99,7 @@
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <div class="me-2">
                                         <div class="fw-semibold text-truncate" title="{{ $row['name'] }}">{{ $row['name'] }}</div>
-                                        <small class="text-muted">{{ $row['qty'] }} x {{ number_format($row['price'], 2) }}
-                                            ₺</small>
+                                        <small class="text-muted">{{ $row['qty'] }} x {{ number_format($row['price'], 2) }} ₺</small>
                                     </div>
                                     <div class="text-end">
                                         <div class="fw-bold">{{ number_format($line, 2) }} ₺</div>
@@ -123,6 +123,45 @@
                     @endif
                 </div>
             </div>
+
+            {{-- Mevcut Siparişler --}}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header"><strong>Mevcut Siparişleriniz</strong></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @forelse($orders as $order)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">#{{ $order->id }}</div>
+                                    <small class="text-muted">{{ $order->items->count() }} ürün</small>
+                                </div>
+                                <span class="badge 
+                                    @if($order->status == 'pending') bg-secondary
+                                    @elseif($order->status == 'in_kitchen') bg-warning text-dark
+                                    @elseif($order->status == 'delivered') bg-info
+                                    @elseif($order->status == 'paid') bg-success
+                                    @endif">
+                                    {{ ucfirst($order->status) }}
+                                </span>
+                            </li>
+                        @empty
+                            <li class="list-group-item text-muted">Henüz siparişiniz yok.</li>
+                        @endforelse
+                    </ul>
+                </div>
+            </div>
+
+            {{-- Garson Çağır --}}
+            <form method="POST" action="{{ route('customer.call', $table->token) }}" class="mt-3">
+                @csrf
+                <button class="btn btn-warning w-100">🚨 Garson Çağır</button>
+            </form>
+
+            {{-- Hesabı Öde --}}
+            <form method="POST" action="{{ route('customer.pay', $table->token) }}" class="mt-2">
+                @csrf
+                <button class="btn btn-dark w-100">💳 Hesabı Öde</button>
+            </form>
         </div>
     </div>
 
@@ -131,60 +170,21 @@
         <span>Sepet</span>
     </a>
 
-    {{-- Basit stil ve JS --}}
+    {{-- Stil & JS --}}
     <style>
-        .category-toggle {
-            background: #fff;
-            border: 1px solid #e9ecef;
-        }
-
-        .product-card .card-img-top {
-            height: 140px;
-            object-fit: cover;
-        }
-
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .cart-sticky {
-            position: sticky;
-            top: 1rem;
-        }
-
-        @media (max-width: 991.98px) {
-
-            /* < lg */
-            .cart-sticky {
-                position: static;
-                top: auto;
-            }
-        }
-
+        .category-toggle { background: #fff; border: 1px solid #e9ecef; }
+        .product-card .card-img-top { height: 140px; object-fit: cover; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .cart-sticky { position: sticky; top: 1rem; }
+        @media (max-width: 991.98px) { .cart-sticky { position: static; top: auto; } }
         .floating-cart-btn {
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            z-index: 1030;
-            background: #198754;
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 999px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
-            text-decoration: none;
-            font-weight: 600;
+            position: fixed; right: 16px; bottom: 16px; z-index: 1030;
+            background: #198754; color: #fff; padding: 10px 14px;
+            border-radius: 999px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+            text-decoration: none; font-weight: 600;
         }
-
-        .qty-btn {
-            min-width: 44px;
-        }
-
-        .input-group .form-control[type=number] {
-            max-width: 90px;
-        }
+        .qty-btn { min-width: 44px; }
+        .input-group .form-control[type=number] { max-width: 90px; }
     </style>
 
     <script>
