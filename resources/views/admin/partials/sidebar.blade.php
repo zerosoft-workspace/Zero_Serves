@@ -1,4 +1,3 @@
-{{-- resources/views/admin/partials/sidebar.blade.php --}}
 <aside class="admin-sidebar">
     <div class="sidebar-content">
         {{-- Main Navigation --}}
@@ -183,5 +182,18 @@
     .badge {
         font-size: 0.6rem;
         padding: 0.25rem 0.5rem;
+    }
+
+    /* Sidebar Scrollbar Customization */
+    .admin-sidebar {
+        overflow-y: scroll;
+        /* Kaydırmayı aktif tutar */
+        scrollbar-width: none;
+        /* Firefox için scrollbar'ı gizler */
+    }
+
+    .admin-sidebar::-webkit-scrollbar {
+        display: none;
+        /* Chrome, Safari ve diğer WebKit tarayıcılar için scrollbar'ı gizler */
     }
 </style>

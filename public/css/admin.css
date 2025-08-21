@@ -1,78 +1,3 @@
-:root {
-    --bg1: #0b1320;
-    --bg2: #121a2b;
-    --card-bg: #ffffff;
-    --text: #0b1320;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --card-bg: #111827;
-        --text: #e5e7eb;
-    }
-}
-
-/* Tam ekran + safe-area */
-body {
-    min-height: 100svh;
-    background: radial-gradient(
-            1200px 600px at 10% -10%,
-            #1e2a44 0%,
-            transparent 60%
-        ),
-        radial-gradient(1100px 500px at 110% 110%, #1b2a3f 0%, transparent 60%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    padding: max(16px, env(safe-area-inset-top))
-        max(16px, env(safe-area-inset-right))
-        max(16px, env(safe-area-inset-bottom))
-        max(16px, env(safe-area-inset-left));
-}
-
-.auth-wrap {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.auth-card {
-    background: var(--card-bg);
-    border: 0;
-    border-radius: 20px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    overflow: hidden;
-}
-
-.brand {
-    font-weight: 800;
-    letter-spacing: 0.4px;
-}
-
-.hero-pane {
-    background: linear-gradient(180deg, #0b1320 0%, #111a2c 100%);
-    color: #e5e7eb;
-}
-
-.hero-pane .muted {
-    opacity: 0.85;
-}
-
-.form-control {
-    padding-block: 0.9rem;
-}
-
-.toggle-pass {
-    cursor: pointer;
-    user-select: none;
-}
-
-@media (max-width: 380px) {
-    .p-xxs-2 {
-        padding: 0.5rem !important;
-    }
-}
 /* public/css/admin.css */
 
 /* Reset ve Base Styles */
@@ -83,7 +8,7 @@ body {
 }
 
 :root {
-    --primary-color: #2563eb;
+    --primary-color: #121a2b;
     --secondary-color: #64748b;
     --success-color: #10b981;
     --danger-color: #ef4444;
@@ -98,7 +23,6 @@ body {
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "Helvetica Neue", Arial, sans-serif;
-    background-color: #f1f5f9;
     line-height: 1.6;
 }
 
@@ -115,7 +39,7 @@ body {
     left: 0;
     right: 0;
     height: var(--navbar-height);
-    background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0b1320 100%);
     color: white;
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -239,7 +163,7 @@ body {
     left: 0;
     width: var(--sidebar-width);
     height: calc(100vh - var(--navbar-height));
-    background: white;
+    background: #121a2b;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
     transition: var(--transition);
@@ -299,6 +223,7 @@ body {
 
 /* Main Content */
 .admin-main {
+    background-color: #ffffff; /* Navbar ve header dışını beyaz yapar */
     margin-left: var(--sidebar-width);
     margin-top: var(--navbar-height);
     padding: 2rem;
@@ -331,7 +256,7 @@ body {
 
 .stats-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
@@ -474,18 +399,21 @@ body {
         padding: 1rem;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
+    .stats-grid,
     .action-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
 
+    .stats-card,
+    .action-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
     .action-buttons {
         flex-direction: column;
+        gap: 0.5rem;
     }
 
     .btn-action {
@@ -505,7 +433,13 @@ body {
     }
 
     .stats-value {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    .stats-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
     }
 }
 
