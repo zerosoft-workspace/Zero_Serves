@@ -15,7 +15,8 @@
         <div class="sidebar-title">Restoran Yönetimi</div>
         <ul class="sidebar-menu">
             <li>
-                <a href="{{ route('admin.tables') }}" class="{{ request()->routeIs('admin.tables*') ? 'active' : '' }}">
+                <a href="{{ route('admin.tables.index') }}"
+                    class="{{ request()->routeIs('admin.tables.index*') ? 'active' : '' }}">
                     <i class="bi bi-grid-3x3-gap"></i>
                     <span>Masalar</span>
                 </a>
@@ -24,7 +25,7 @@
                 <a href="#" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="bi bi-receipt"></i>
                     <span>Siparişler</span>
-                    <span class="badge bg-danger ms-auto">5</span>
+
                 </a>
             </li>
             <li>
@@ -89,9 +90,9 @@
         <div class="sidebar-title">Sistem Yönetimi</div>
         <ul class="sidebar-menu">
             <li>
-                <a href="#" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
-                    <i class="bi bi-person-gear"></i>
-                    <span>Kullanıcılar</span>
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
+                    href="{{ route('admin.users.index') }}">
+                    <i class="bi bi-people"></i> Kullanıcılar
                 </a>
             </li>
             <li>
@@ -107,7 +108,6 @@
                 </a>
             </li>
         </ul>
-
         <div class="sidebar-divider"></div>
 
         {{-- Quick Stats --}}

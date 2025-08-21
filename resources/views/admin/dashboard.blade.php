@@ -138,7 +138,7 @@
                 Hızlı İşlemler
             </h5>
             <div class="action-buttons">
-                <a href="{{ route('admin.tables') }}" class="btn-action btn-primary">
+                <a href="{{ route('admin.tables.index') }}" class="btn-action btn-primary">
                     <i class="bi bi-grid-3x3-gap"></i>
                     Masaları Yönet
                     @if($pendingOrders > 0)

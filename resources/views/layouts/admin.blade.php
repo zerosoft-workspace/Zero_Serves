@@ -17,6 +17,7 @@
 
     @stack('styles')
 </head>
+@stack('scripts')
 
 <body>
     <div class="admin-container">

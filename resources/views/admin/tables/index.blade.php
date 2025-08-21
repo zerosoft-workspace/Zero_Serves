@@ -42,24 +42,22 @@
                                 {!! QrCode::size(512)->format('svg')->generate(route('customer.table.token', $table->token)) !!}
                             </div>
 
-                            {{-- Token + kısayollar --}}
+                            {{-- Token --}}
                             <div class="small">
                                 <div class="text-muted mb-1">Token</div>
                                 <div class="d-flex flex-wrap align-items-center gap-2">
                                     <a href="{{ route('customer.table.token', $table->token) }}" target="_blank"
                                         class="text-decoration-none text-break">{{ $table->token }}</a>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm"
-                                        data-copy="{{ $table->token }}">Kopyala</button>
-                                    <a class="btn btn-outline-primary btn-sm"
-                                        href="{{ route('customer.table.token', $table->token) }}" target="_blank">
-                                        Aç
-                                    </a>
                                 </div>
                             </div>
 
-                            {{-- Aksiyonlar: küçük ekranda tam genişlik, büyükte satır içi --}}
+                            {{-- Aksiyonlar --}}
                             <div class="mt-auto">
                                 <div class="d-grid gap-2 d-md-flex">
+                                    {{-- Kopyala --}}
+                                    <button type="button" class="btn btn-info w-100 w-md-auto"
+                                        data-copy="{{ $table->token }}">Kopyala</button>
+
                                     {{-- Temizle --}}
                                     <form action="{{ route('admin.tables.clear', $table->id) }}" method="POST"
                                         onsubmit="return confirm('Masayı tamamen temizlemek istiyor musunuz?')">
@@ -76,6 +74,7 @@
                                     </form>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>

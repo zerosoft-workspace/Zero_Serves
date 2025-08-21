@@ -19,7 +19,7 @@
         <div class="navbar-right">
             {{-- Quick Actions --}}
             <div class="quick-actions d-none d-md-flex">
-                <a href="{{ route('admin.tables') }}" class="btn btn-outline-light btn-sm me-2" title="Masalar">
+                <a href="{{ route('admin.tables.index') }}" class="btn btn-outline-light btn-sm me-2" title="Masalar">
                     <i class="bi bi-grid-3x3-gap"></i>
                 </a>
                 <a href="#" class="btn btn-outline-light btn-sm me-2" title="Yeni Sipariş">

@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\WaiterController;
 use App\Http\Controllers\AdminController;
 
@@ -20,16 +20,25 @@ use App\Http\Controllers\Admin\AdminAuthController;
 | Admin
 |--------------------------------------------------------------------------
 */
+
+
 Route::prefix('admin')->name('admin.')->group(function () {
-    // /admin → login'e yönlendir
-    Route::get('/', fn() => redirect()->route('admin.login'));
+    // /admin → login (misafir), girişliyse dashboard
+    Route::get('/', function () {
+        return auth()->check()
+            ? redirect()->route('admin.dashboard')
+            : redirect()->route('admin.login');
+    })->name('root');
 
-    // Giriş
-    Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
+    /** Misafir (login ekranları) */
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
+    });
 
-    // Sadece giriş yapmış admin erişir
+    /** Girişli admin */
     Route::middleware(['auth', 'admin'])->group(function () {
+        // Dashboard
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats');
 
@@ -37,25 +46,43 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
         // Masalar
-        Route::get('/tables', [TableController::class, 'index'])->name('tables');
-        Route::post('/tables', [TableController::class, 'store'])->name('tables.store');
-        Route::delete('/tables/{id}', [TableController::class, 'destroy'])->name('tables.destroy');
-        Route::post('/tables/{table}/clear', [TableController::class, 'clear'])->name('tables.clear');
+        Route::prefix('tables')->name('tables.')->controller(TableController::class)->group(function () {
+            Route::get('/', 'index')->name('index');                // admin.tables.index
+            Route::post('/', 'store')->name('store');               // admin.tables.store
+            Route::post('/{table}/clear', 'clear')
+                ->whereNumber('table')->name('clear');              // admin.tables.clear
+            Route::delete('/{table}', 'destroy')
+                ->whereNumber('table')->name('destroy');            // admin.tables.destroy
+        });
 
         // Kategoriler
-        Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-        Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
+        });
 
         // Ürünler
-        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-        Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-        Route::patch('/products/{id}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
-        Route::patch('/products/{id}/activate', [ProductController::class, 'activate'])->name('products.activate');
+        Route::prefix('products')->name('products.')->controller(ProductController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
+            Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate');
+            Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');
+        });
+
+        // Kullanıcılar (REST'e uygun: index/store/update/destroy) + izinler
+        Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');               // NOT: create yerine store
+            Route::put('/{user}', 'update')->whereNumber('user')->name('update');
+            Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy');
+
+            Route::get('/{id}/permissions', 'permissions')
+                ->whereNumber('id')->name('permissions');
+        });
     });
 });
-
 /*
 |--------------------------------------------------------------------------
 | Landing
