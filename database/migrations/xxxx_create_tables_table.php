@@ -9,10 +9,15 @@ return new class extends Migration {
     {
         Schema::create('tables', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Masa 1, Masa 2 gibi
-            $table->string('qr_code_path')->nullable(); // QR kod görsel yolu
-            $table->enum('status', ['empty', 'occupied', 'order_pending'])
-                ->default('empty'); // Masa durumu
+            $table->string('name'); // Masa adı (ör: Masa 1)
+            $table->string('token', 64)->unique(); // QR için benzersiz token
+            $table->enum('status', [
+                'empty',
+                'order_pending',
+                'preparing',
+                'delivered',
+                'paid'
+            ])->default('empty'); // Masa/Sipariş durumu
             $table->timestamps();
         });
     }

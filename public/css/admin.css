@@ -1,0 +1,75 @@
+:root {
+    --bg1: #0b1320;
+    --bg2: #121a2b;
+    --card-bg: #ffffff;
+    --text: #0b1320;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --card-bg: #111827;
+        --text: #e5e7eb;
+    }
+}
+
+/* Tam ekran + safe-area */
+body {
+    min-height: 100svh;
+    background: radial-gradient(
+            1200px 600px at 10% -10%,
+            #1e2a44 0%,
+            transparent 60%
+        ),
+        radial-gradient(1100px 500px at 110% 110%, #1b2a3f 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    padding: max(16px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+}
+
+.auth-wrap {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.auth-card {
+    background: var(--card-bg);
+    border: 0;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.brand {
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+.hero-pane {
+    background: linear-gradient(180deg, #0b1320 0%, #111a2c 100%);
+    color: #e5e7eb;
+}
+
+.hero-pane .muted {
+    opacity: 0.85;
+}
+
+.form-control {
+    padding-block: 0.9rem;
+}
+
+.toggle-pass {
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (max-width: 380px) {
+    .p-xxs-2 {
+        padding: 0.5rem !important;
+    }
+}
