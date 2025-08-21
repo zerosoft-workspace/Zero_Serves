@@ -7,10 +7,13 @@ use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WaiterController;
+use App\Http\Controllers\AdminController;
+
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -27,9 +30,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Sadece giriş yapmış admin erişir
     Route::middleware(['auth', 'admin'])->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats');
 
         // Çıkış
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
