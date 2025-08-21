@@ -6,10 +6,16 @@
 @section('content')
     {{-- Alerts --}}
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
     @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
     <div class="row gx-3 gy-4">
@@ -81,10 +87,13 @@
             <div id="cart" class="card shadow-sm cart-sticky">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Sepet</strong>
-                    <form method="POST" action="{{ route('customer.cart.clear', $table->token) }}">
-                        @csrf
-                        <button class="btn btn-sm btn-outline-secondary">Temizle</button>
-                    </form>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary rounded-pill me-2 cart-items-count">{{ count(session('cart', [])) }}</span>
+                        <form method="POST" action="{{ route('customer.cart.clear', $table->token) }}">
+                            @csrf
+                            <button class="btn btn-sm btn-outline-secondary">Temizle</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-body">
                     @php $cart = session('cart', []);
@@ -97,7 +106,7 @@
                                 @php $line = $row['price'] * $row['qty'];
                                 $sum += $line; @endphp
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div class="me-2">
+                                    <div class="me-2 flex-grow-1">
                                         <div class="fw-semibold text-truncate" title="{{ $row['name'] }}">{{ $row['name'] }}</div>
                                         <small class="text-muted">{{ $row['qty'] }} x {{ number_format($row['price'], 2) }} ₺</small>
                                     </div>
@@ -165,28 +174,36 @@
         </div>
     </div>
 
+    {{-- Mobil Navigasyon --}}
+    <div class="mobile-nav">
+        <a href="#products" class="mobile-nav-btn">
+            <i class="bi bi-list-ul"></i>
+            <span>Menü</span>
+        </a>
+        <a href="#cart" class="mobile-nav-btn">
+            <i class="bi bi-cart3"></i>
+            <span>Sepet</span>
+            @if(!empty(session('cart', [])))
+                <span class="cart-count-badge">{{ count(session('cart', [])) }}</span>
+            @endif
+        </a>
+        <a href="#orders" class="mobile-nav-btn">
+            <i class="bi bi-clock-history"></i>
+            <span>Siparişler</span>
+        </a>
+    </div>
+
     {{-- Yüzen Sepet Butonu (mobil) --}}
     <a href="#cart" class="floating-cart-btn d-lg-none">
+        <i class="bi bi-cart3 me-1"></i>
         <span>Sepet</span>
+        @if(!empty(session('cart', [])))
+            <span class="cart-count-badge">{{ count(session('cart', [])) }}</span>
+        @endif
     </a>
+@endsection
 
-    {{-- Stil & JS --}}
-    <style>
-        .category-toggle { background: #fff; border: 1px solid #e9ecef; }
-        .product-card .card-img-top { height: 140px; object-fit: cover; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .cart-sticky { position: sticky; top: 1rem; }
-        @media (max-width: 991.98px) { .cart-sticky { position: static; top: auto; } }
-        .floating-cart-btn {
-            position: fixed; right: 16px; bottom: 16px; z-index: 1030;
-            background: #198754; color: #fff; padding: 10px 14px;
-            border-radius: 999px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
-            text-decoration: none; font-weight: 600;
-        }
-        .qty-btn { min-width: 44px; }
-        .input-group .form-control[type=number] { max-width: 90px; }
-    </style>
-
+@section('scripts')
     <script>
         // + / − butonları
         document.addEventListener('click', function (e) {
@@ -203,6 +220,55 @@
             if (val < min) val = min;
             if (val > max) val = max;
             input.value = val;
+        });
+
+        // Mobil navigasyon aktif durumu
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.mobile-nav-btn');
+            const sections = document.querySelectorAll('[id]');
+            
+            // Sayfa yüklendiğinde aktif bölümü kontrol et
+            highlightActiveSection();
+            
+            // Sayfa kaydırıldığında aktif bölümü güncelle
+            window.addEventListener('scroll', highlightActiveSection);
+            
+            function highlightActiveSection() {
+                let currentSection = '';
+                const scrollPosition = window.scrollY + 100;
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+                    
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+                
+                navButtons.forEach(button => {
+                    button.classList.remove('active');
+                    if (button.getAttribute('href').substring(1) === currentSection) {
+                        button.classList.add('active');
+                    }
+                });
+            }
+            
+            // Mobil navigasyon tıklamaları
+            navButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
         });
     </script>
 @endsection

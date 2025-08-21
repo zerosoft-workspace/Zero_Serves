@@ -13,7 +13,7 @@ class WaiterController extends Controller
     {
 
         $tables = Table::all();
-        return view('waiter.index', compact('tables'));
+        return view('waiter.dashboard', compact('tables'));
     }
 
     // Masa detay sayfası

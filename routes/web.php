@@ -8,6 +8,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\WaiterController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Waiter\WaiterAuthController;
 
 
 use App\Http\Controllers\Admin\CategoryController;
@@ -24,17 +25,12 @@ use App\Http\Controllers\Admin\AdminAuthController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
     // /admin → login (misafir), girişliyse dashboard
-    Route::get('/', function () {
-        return auth()->check()
-            ? redirect()->route('admin.dashboard')
-            : redirect()->route('admin.login');
-    })->name('root');
+    Route::get('/', fn() => redirect()->route('admin.login'));
+
 
     /** Misafir (login ekranları) */
-    Route::middleware('guest')->group(function () {
-        Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
-        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
-    });
+    Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
 
     /** Girişli admin */
     Route::middleware(['auth', 'admin'])->group(function () {
@@ -108,13 +104,26 @@ Route::post('/table/{token}/pay', [CustomerOrderController::class, 'pay'])->name
 | Garson
 |--------------------------------------------------------------------------
 */
-Route::prefix('waiter')->group(function () {
-    Route::get('/', [WaiterController::class, 'index'])->name('waiter.index');
+Route::prefix('waiter')->name('waiter.')->group(function () {
+    // /waiter → login ekranına yönlendir
+    Route::get('/', fn() => redirect()->route('waiter.login'));
 
-    // Implicit binding için {table}
-    Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('waiter.table');
+    // 🔑 Login işlemleri
+    Route::get('/login', [WaiterAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [WaiterAuthController::class, 'login'])->name('login.post');
 
-    // Sipariş için de implicit binding
-    Route::post('/order/{order}/status', [WaiterController::class, 'updateOrderStatus'])->name('waiter.order.status');
+    // 🔒 Giriş yapan garson erişebilir
+    Route::middleware(['auth', 'waiter'])->group(function () {   // 👈 role:waiter yerine waiter
+        Route::post('/logout', [WaiterAuthController::class, 'logout'])->name('logout');
+
+        // Garson dashboard → WaiterController@index
+        Route::get('/dashboard', [WaiterController::class, 'index'])->name('dashboard');
+
+        // Implicit binding: {table}
+        Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('table');
+
+        // Sipariş durum güncelleme
+        Route::post('/order/{order}/status', [WaiterController::class, 'updateOrderStatus'])->name('order.status');
+    });
 });
 

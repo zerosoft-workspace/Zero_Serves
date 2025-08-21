@@ -13,7 +13,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-dark bg-primary mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('waiter.index') }}">🍽 Garson Paneli</a>
+            <a class="navbar-brand" href="{{ route('waiter.dashboard') }}">🍽 Garson Paneli</a>
         </div>
     </nav>
 

@@ -37,5 +37,5 @@
         <p class="text-muted">Bu masada sipariş yok.</p>
     @endif
 
-    <a href="{{ route('waiter.index') }}" class="btn btn-outline-secondary">← Masalara Dön</a>
+    <a href="{{ route('waiter.dashboard') }}" class="btn btn-outline-secondary">← Masalara Dön</a>
 @endsection
