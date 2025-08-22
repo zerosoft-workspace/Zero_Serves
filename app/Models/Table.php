@@ -17,5 +17,11 @@ class Table extends Model
     {
         return $this->hasMany(\App\Models\Order::class);
     }
+    public function active_order()
+    {
+        return $this->hasOne(Order::class, 'table_id', 'id')
+            ->whereNotIn('status', ['paid']) // ödenmiş siparişleri hariç tut
+            ->latest();
+    }
 
 }

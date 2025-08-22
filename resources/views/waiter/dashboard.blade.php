@@ -1,51 +1,59 @@
-{{-- resources/views/waiter/dashboard.blade.php --}}
-@extends('layouts.admin') {{-- Şimdilik admin layoutunu kullandık. İstersen ayrı waiter layout açabiliriz. --}}
+@extends('layouts.waiter')
+
+@section('title', 'Masalar')
 
 @section('content')
-    <div class="container py-4">
-        <h2 class="mb-3">Garson Paneli</h2>
-
-        @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
-
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <strong>Masalar</strong>
-            </div>
-            <div class="card-body">
-                @if($tables->count() > 0)
-                    <div class="row g-3">
-                        @foreach($tables as $table)
-                            <div class="col-md-4 col-sm-6">
-                                <div class="card h-100 border">
-                                    <div class="card-body d-flex flex-column justify-content-between">
-                                        <h5 class="card-title mb-2">{{ $table->name }}</h5>
-                                        <p class="card-text">
-                                            Durum:
-                                            <span class="badge 
-                                                        @if($table->status === 'empty') bg-success 
-                                                        @elseif($table->status === 'pending') bg-warning 
-                                                        @elseif($table->status === 'preparing') bg-info 
-                                                        @elseif($table->status === 'delivered') bg-primary 
-                                                        @elseif($table->status === 'paid') bg-secondary 
-                                                        @else bg-dark @endif">
-                                                {{ ucfirst($table->status) }}
-                                            </span>
-                                        </p>
-                                        <a href="{{ route('waiter.table', $table->id) }}"
-                                            class="btn btn-outline-dark btn-sm mt-auto">
-                                            Detayları Gör
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-muted">Hiç masa bulunamadı.</p>
-                @endif
-            </div>
-        </div>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">Masalar</h2>
     </div>
+
+    @php
+        // Sipariş statülerinin Türkçe karşılıkları
+        $statusMap = [
+            'pending' => 'Sipariş Bekliyor',
+            'preparing' => 'Hazırlanıyor',
+            'delivered' => 'Teslim Edildi',
+            'paid' => 'Boş',
+        ];
+    @endphp
+
+    @if(isset($tables) && count($tables))
+        <div class="row g-3">
+            @foreach($tables as $table)
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card shadow-sm card-hover h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <h5 class="card-title mb-0">{{ $table->name }}</h5>
+                                <a href="{{ url('/waiter/table/' . $table->id) }}" class="btn btn-sm btn-outline-primary">
+                                    Detaya Git
+                                </a>
+                            </div>
+
+                            {{-- Sipariş durumu rozetleri --}}
+                            @if($table->active_order)
+                                @php $orderStatus = $table->active_order->status; @endphp
+                                @if($orderStatus === 'pending')
+                                    <span class="badge bg-danger">{{ $statusMap[$orderStatus] }}</span>
+                                @elseif($orderStatus === 'preparing')
+                                    <span class="badge bg-warning text-dark">{{ $statusMap[$orderStatus] }}</span>
+                                @elseif($orderStatus === 'delivered')
+                                    <span class="badge bg-success">{{ $statusMap[$orderStatus] }}</span>
+                                @elseif($orderStatus === 'paid')
+                                    <span class="badge bg-secondary">{{ $statusMap[$orderStatus] }}</span>
+                                @else
+                                    <span class="badge bg-dark">{{ strtoupper($orderStatus) }}</span>
+                                @endif
+                            @else
+                                <span class="badge bg-secondary">Boş</span>
+                            @endif
+
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <div class="alert alert-info">Kayıtlı masa bulunamadı.</div>
+    @endif
 @endsection

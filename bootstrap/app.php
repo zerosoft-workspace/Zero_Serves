@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'waiter' => \App\Http\Middleware\EnsureWaiter::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleSessionTimeout::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
