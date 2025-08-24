@@ -1,6 +1,13 @@
 @extends('layouts.waiter')
 
 @section('title', $table->name ?? 'Masa')
+{{-- table.blade.php başına ek --}}
+@section('header_actions')
+    <a href="{{ route('waiter.dashboard') }}" class="btn btn-sm btn-ghost">
+        <i class="bi bi-arrow-left me-1"></i> Masalar
+    </a>
+@endsection
+
 
 @section('content')
     @php
