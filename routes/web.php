@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth; // 👈 eklendi
 
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\CustomerOrderController;
@@ -9,74 +10,74 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\WaiterController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Waiter\WaiterAuthController;
-
-
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
-
 
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
-
-
 Route::prefix('admin')->name('admin.')->group(function () {
-    // /admin → login (misafir), girişliyse dashboard
-    Route::get('/', fn() => redirect()->route('admin.login'));
+    // /admin → akıllı giriş noktası
+    Route::get('/', function () {
+        if (Auth::check() && Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        return redirect()->route('admin.login');
+    })->name('entry'); // 👈 landing'ten buna link ver
 
     /** Misafir (login ekranları) */
-    Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login'); // admin.login
-    Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');   // admin.login.post
+    Route::middleware(['guest'])->group(function () {
+        Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');      // admin.login
+        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');        // admin.login.post
+    });
 
     /** Girişli admin */
-    Route::middleware(['auth', 'admin'])->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');           // admin.dashboard
+    Route::middleware([
+        'auth',
+        'admin',
+        // varsa alias tanımlıysa kullan; yoksa bu satırı kaldır
+        'session.timeout',
+        'prevent.back.history',
+    ])->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');                  // admin.dashboard
         Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats'); // admin.dashboard.stats
 
-        // Çıkış
-        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');               // admin.logout
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');                      // admin.logout
 
-        // Masalar
         Route::prefix('tables')->name('tables.')->controller(TableController::class)->group(function () {
-            Route::get('/', 'index')->name('index');                    // admin.tables.index
-            Route::post('/', 'store')->name('store');                   // admin.tables.store
-            Route::post('/{table}/clear', 'clear')
-                ->whereNumber('table')->name('clear');                  // admin.tables.clear
-            Route::delete('/{table}', 'destroy')
-                ->whereNumber('table')->name('destroy');                // admin.tables.destroy
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::post('/{table}/clear', 'clear')->whereNumber('table')->name('clear');
+            Route::delete('/{table}', 'destroy')->whereNumber('table')->name('destroy');
         });
 
-        // Kategoriler
         Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
-            Route::get('/', 'index')->name('index');                    // admin.categories.index
-            Route::post('/', 'store')->name('store');                   // admin.categories.store
-            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy'); // admin.categories.destroy
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
         });
 
-        // Ürünler
         Route::prefix('products')->name('products.')->controller(ProductController::class)->group(function () {
-            Route::get('/', 'index')->name('index');                    // admin.products.index
-            Route::post('/', 'store')->name('store');                   // admin.products.store
-            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');     // admin.products.destroy
-            Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate'); // admin.products.deactivate
-            Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');       // admin.products.activate
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
+            Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate');
+            Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');
         });
 
-        // Kullanıcılar (REST'e uygun: index/store/update/destroy) + izinler
         Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
-            Route::get('/', 'index')->name('index');                    // admin.users.index
-            Route::post('/', 'store')->name('store');                   // admin.users.store
-            Route::put('/{user}', 'update')->whereNumber('user')->name('update');      // admin.users.update
-            Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy'); // admin.users.destroy
-            Route::get('/{id}/permissions', 'permissions')
-                ->whereNumber('id')->name('permissions');               // admin.users.permissions
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{user}', 'update')->whereNumber('user')->name('update');
+            Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy');
+            Route::get('/{id}/permissions', 'permissions')->whereNumber('id')->name('permissions');
         });
     });
 });
+
 /*
 |--------------------------------------------------------------------------
 | Landing
@@ -103,26 +104,40 @@ Route::post('/table/{token}/pay', [CustomerOrderController::class, 'pay'])->name
 |--------------------------------------------------------------------------
 */
 Route::prefix('waiter')->name('waiter.')->group(function () {
-    // /waiter → login ekranına yönlendir
-    Route::get('/', fn() => redirect()->route('waiter.login'));
+    // /waiter → akıllı giriş noktası
+    Route::get('/', function () {
+        if (Auth::check() && Auth::user()->role === 'waiter') {
+            return redirect()->route('waiter.dashboard');
+        }
+        return redirect()->route('waiter.login');
+    })->name('entry'); // 👈 landing'ten buna link ver
 
-    // 🔑 Login işlemleri
-    Route::get('/login', [WaiterAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [WaiterAuthController::class, 'login'])->name('login.post');
+    // Misafir (login)
+    Route::middleware(['guest'])->group(function () {
+        Route::get('/login', [WaiterAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [WaiterAuthController::class, 'login'])->name('login.post');
+    });
 
-    // 🔒 Giriş yapan garson erişebilir
-    Route::middleware(['auth', 'waiter'])->group(function () {   // 👈 role:waiter yerine waiter
+    // Giriş yapan garson
+    Route::middleware([
+        'auth',
+        'waiter',
+        // varsa alias tanımlıysa kullan; yoksa bu satırı kaldır
+        'session.timeout',
+        'prevent.back.history',
+    ])->group(function () {
         Route::post('/logout', [WaiterAuthController::class, 'logout'])->name('logout');
 
-        // Garson dashboard → WaiterController@index
         Route::get('/dashboard', [WaiterController::class, 'index'])->name('dashboard');
-
-        // Implicit binding: {table}
         Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('table');
-
-        // Sipariş durum güncelleme
-        Route::post('/orders/{order}/status', [WaiterController::class, 'updateOrderStatus'])
-            ->name('orders.status');
+        Route::post('/orders/{order}/status', [WaiterController::class, 'updateOrderStatus'])->name('orders.status');
     });
 });
 
+// (isteğe bağlı) debug logout
+Route::get('/_force_logout', function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return 'forced logout';
+});

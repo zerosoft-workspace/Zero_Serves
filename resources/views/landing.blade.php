@@ -21,8 +21,8 @@
                 <li><a href="#rezervasyon">Rezervasyon</a></li>
                 <li><a href="#galeri">Galeri</a></li>
                 <li><a href="#iletisim">İletişim</a></li>
-                <li><a href="{{ route(name: 'admin.login') }}">Admin Paneli</a></li>
-                <li><a href="{{ route(name: 'waiter.login') }}">Garson Paneli</a></li>
+                <li><a href="{{ route('admin.entry') }}">Admin Paneli</a></li>
+                <li><a href="{{ route(name: 'waiter.entry') }}">Garson Paneli</a></li>
             </ul>
 
             <div class="hamburger" id="hamburger">
@@ -233,6 +233,9 @@
                 }
             });
         });
+
+        history.replaceState(null, '', location.href);
+
     </script>
 </body>
 

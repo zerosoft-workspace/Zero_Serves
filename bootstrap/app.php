@@ -14,10 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'waiter' => \App\Http\Middleware\EnsureWaiter::class,
+            'prevent.back.history' => \App\Http\Middleware\PreventBackHistory::class,
+            'session.timeout' => \App\Http\Middleware\HandleSessionTimeout::class, // <-- alias
+    
+
         ]);
-        $middleware->web(append: [
-            \App\Http\Middleware\HandleSessionTimeout::class,
-        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
