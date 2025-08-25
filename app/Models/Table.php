@@ -20,8 +20,27 @@ class Table extends Model
     public function active_order()
     {
         return $this->hasOne(Order::class, 'table_id', 'id')
-            ->whereNotIn('status', ['paid']) // ödenmiş siparişleri hariç tut
+            ->whereNotIn('status', ['paid', 'canceled']) // ödenmiş ve iptal edilmiş siparişleri hariç tut
             ->latest();
+    }
+
+    /**
+     * Masanın durumunu sipariş durumuna göre güncelle
+     */
+    public function updateStatusBasedOnOrders()
+    {
+        $activeOrder = $this->active_order()->first();
+        
+        if ($activeOrder) {
+            // Aktif sipariş varsa masa dolu - eski enum değerlerini kullan
+            $this->status = 'order_pending';
+        } else {
+            // Aktif sipariş yoksa masa boş
+            $this->status = 'empty';
+        }
+        
+        $this->save();
+        return $this->status;
     }
 
 }

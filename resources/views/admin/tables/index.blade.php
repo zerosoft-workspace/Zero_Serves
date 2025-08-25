@@ -29,12 +29,57 @@
                         <div class="card-body d-flex flex-column gap-3">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <h5 class="card-title mb-0 text-truncate" title="{{ $table->name }}">{{ $table->name }}</h5>
-                                @if(!empty($table->status))
-                                    <span
-                                        class="badge text-bg-{{ $table->status === 'empty' ? 'success' : ($table->status === 'reserved' ? 'warning' : 'secondary') }}">
-                                        {{ ucfirst($table->status) }}
-                                    </span>
-                                @endif
+                                @php
+                                    $activeOrder = $table->active_order;
+                                    $statusColor = 'success';
+                                    $statusText = 'Boş';
+                                    
+                                    if ($activeOrder) {
+                                        switch($activeOrder->status) {
+                                            case 'pending':
+                                                $statusColor = 'warning';
+                                                $statusText = 'Sipariş Bekliyor';
+                                                break;
+                                            case 'preparing':
+                                                $statusColor = 'info';
+                                                $statusText = 'Hazırlanıyor';
+                                                break;
+                                            case 'delivered':
+                                                $statusColor = 'primary';
+                                                $statusText = 'Teslim Edildi';
+                                                break;
+                                            default:
+                                                $statusColor = 'secondary';
+                                                $statusText = 'Dolu';
+                                        }
+                                    } else {
+                                        // Masa durumuna göre renk belirle
+                                        switch($table->status) {
+                                            case 'order_pending':
+                                                $statusColor = 'warning';
+                                                $statusText = 'Sipariş Var';
+                                                break;
+                                            case 'preparing':
+                                                $statusColor = 'info';
+                                                $statusText = 'Hazırlanıyor';
+                                                break;
+                                            case 'delivered':
+                                                $statusColor = 'primary';
+                                                $statusText = 'Teslim Edildi';
+                                                break;
+                                            case 'paid':
+                                                $statusColor = 'success';
+                                                $statusText = 'Boş';
+                                                break;
+                                            default:
+                                                $statusColor = 'success';
+                                                $statusText = 'Boş';
+                                        }
+                                    }
+                                @endphp
+                                <span class="badge text-bg-{{ $statusColor }}">
+                                    {{ $statusText }}
+                                </span>
                             </div>
 
                             {{-- QR: responsive SVG --}}

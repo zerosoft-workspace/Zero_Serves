@@ -333,17 +333,26 @@ let selectedOrders = [];
 // Sipariş durumu güncelleme
 function updateOrderStatus(orderId, status) {
     if (confirm('Sipariş durumunu güncellemek istediğinizden emin misiniz?')) {
+        // Loading göster
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="spinner-border spinner-border-sm" role="status"></i> Güncelleniyor...';
+        
         fetch(`/admin/orders/${orderId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ status: status })
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                });
             }
             return response.json();
         })
@@ -355,11 +364,17 @@ function updateOrderStatus(orderId, status) {
                 updateStats();
             } else {
                 showAlert('danger', data.message || 'Güncelleme başarısız');
+                // Butonu eski haline getir
+                button.disabled = false;
+                button.innerHTML = originalText;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showAlert('danger', 'Bağlantı hatası oluştu');
+            showAlert('danger', `Hata: ${error.message}`);
+            // Butonu eski haline getir
+            button.disabled = false;
+            button.innerHTML = originalText;
         });
     }
 }
@@ -455,29 +470,57 @@ function bulkUpdateStatus() {
     }
     
     if (confirm(`${selectedOrders.length} siparişin durumunu güncellemek istediğinizden emin misiniz?`)) {
+        // Loading göster
+        const bulkButton = document.querySelector('button[onclick="bulkUpdateStatus()"]');
+        const originalText = bulkButton.innerHTML;
+        bulkButton.disabled = true;
+        bulkButton.innerHTML = '<i class="spinner-border spinner-border-sm" role="status"></i> Güncelleniyor...';
+        
         fetch('/admin/orders/bulk-status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 order_ids: selectedOrders,
                 status: status
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
+                // Seçili siparişlerin satırlarını güncelle
+                selectedOrders.forEach(orderId => {
+                    updateOrderRowStatus(orderId, status);
+                });
+                
                 showAlert('success', data.message);
-                setTimeout(() => location.reload(), 1500);
+                updateStats();
+                clearSelection();
             } else {
                 showAlert('danger', data.message);
             }
+            
+            // Butonu eski haline getir
+            bulkButton.disabled = false;
+            bulkButton.innerHTML = originalText;
         })
         .catch(error => {
             console.error('Error:', error);
-            showAlert('danger', 'Bir hata oluştu');
+            showAlert('danger', `Hata: ${error.message}`);
+            
+            // Butonu eski haline getir
+            bulkButton.disabled = false;
+            bulkButton.innerHTML = originalText;
         });
     }
 }
@@ -597,6 +640,30 @@ function showAlert(type, message) {
             alertDiv.remove();
         }
     }, 4000);
+}
+
+// Durum rengi belirleme
+function getStatusColor(status) {
+    switch(status) {
+        case 'pending': return 'warning';
+        case 'preparing': return 'info';
+        case 'delivered': return 'primary';
+        case 'paid': return 'success';
+        case 'canceled': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+// Durum metni belirleme
+function getStatusText(status) {
+    switch(status) {
+        case 'pending': return 'Bekliyor';
+        case 'preparing': return 'Hazırlanıyor';
+        case 'delivered': return 'Teslim Edildi';
+        case 'paid': return 'Ödendi';
+        case 'canceled': return 'İptal';
+        default: return status;
+    }
 }
 
 // Real-time güncellemeler

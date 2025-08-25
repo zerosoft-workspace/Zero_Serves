@@ -106,6 +106,11 @@ class OrderManagementController extends Controller
                 // Sipariş iptal edildi, stoku geri yükle
                 $this->stockService->restoreStockAfterCancellation($order);
             }
+
+            // Masa durumunu güncelle
+            if ($order->table) {
+                $order->table->updateStatusBasedOnOrders();
+            }
         });
 
         return response()->json([

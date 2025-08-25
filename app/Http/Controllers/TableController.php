@@ -10,7 +10,7 @@ class TableController extends Controller
     // Masa listesi (Admin için)
     public function index()
     {
-        $tables = Table::all();
+        $tables = Table::with('active_order')->get();
         return view('admin.tables.index', compact('tables'));
     }
 

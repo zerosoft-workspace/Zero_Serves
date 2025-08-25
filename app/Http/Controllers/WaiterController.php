@@ -85,6 +85,11 @@ class WaiterController extends Controller
                 $this->stockService->restoreStockAfterCancellation($order);
             }
 
+            // Masa durumunu güncelle
+            if ($order->table) {
+                $order->table->updateStatusBasedOnOrders();
+            }
+
             OrderStatusLog::create([
                 'order_id' => $order->id,
                 'from_status' => $from,

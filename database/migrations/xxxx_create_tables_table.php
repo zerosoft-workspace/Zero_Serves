@@ -13,11 +13,9 @@ return new class extends Migration {
             $table->string('token', 64)->unique(); // QR için benzersiz token
             $table->enum('status', [
                 'empty',
-                'order_pending',
-                'preparing',
-                'delivered',
-                'paid'
-            ])->default('empty'); // Masa/Sipariş durumu
+                'occupied',
+                'reserved'
+            ])->default('empty'); // Masa durumu
             $table->timestamps();
         });
     }
