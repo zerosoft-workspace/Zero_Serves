@@ -99,7 +99,7 @@ class CustomerOrderController extends Controller
             'table_id' => $table->id,
             'status' => 'pending',
             'payment_status' => 'unpaid',
-            'total_price' => $total,
+            'total_amount' => $total,
         ]);
 
         foreach ($cart as $pid => $row) {
@@ -141,7 +141,7 @@ class CustomerOrderController extends Controller
 
         $total = Order::where('table_id', $table->id)
             ->where('payment_status', 'unpaid')
-            ->sum('total_price');
+            ->sum('total_amaount');
 
         if ($total <= 0) {
             return back()->with('error', 'Ödenecek sipariş bulunamadı.');
@@ -149,7 +149,7 @@ class CustomerOrderController extends Controller
 
         Payment::create([
             'table_id' => $table->id,
-            'amount' => $total,
+            'total_amount' => $total,
             'method' => 'cash', // şimdilik sabit, ileride online seçilebilir
             'status' => 'pending',
         ]);

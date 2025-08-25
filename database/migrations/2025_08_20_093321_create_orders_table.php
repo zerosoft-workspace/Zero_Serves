@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('table_id')->constrained('tables')->cascadeOnDelete();
             $table->enum('status', ['pending', 'preparing', 'delivered', 'paid'])->default('pending');
             $table->enum('payment_status', ['unpaid', 'paid'])->default('unpaid');
-            $table->decimal('total_price', 10, 2)->default(0);
+            $table->decimal('total_amount', 10, 2)->default(0);
             $table->timestamps();
         });
     }
