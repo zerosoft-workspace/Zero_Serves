@@ -8,9 +8,16 @@ use App\Models\Table;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\StockService;
 
 class WaiterController extends Controller
 {
+    protected $stockService;
+
+    public function __construct(StockService $stockService)
+    {
+        $this->stockService = $stockService;
+    }
     // Garson ana sayfa: masa listesi
     public function index()
     {
@@ -68,6 +75,15 @@ class WaiterController extends Controller
         DB::transaction(function () use ($order, $from, $to, $user) {
             $order->status = $to;
             $order->save();
+
+            // Stok işlemleri
+            if ($to === 'paid' && $from !== 'paid') {
+                // Sipariş ödendi, stoktan düş
+                $this->stockService->updateStockAfterOrder($order);
+            } elseif ($to === 'canceled' && in_array($from, ['preparing', 'delivered', 'paid'])) {
+                // Sipariş iptal edildi, stoku geri yükle
+                $this->stockService->restoreStockAfterCancellation($order);
+            }
 
             OrderStatusLog::create([
                 'order_id' => $order->id,

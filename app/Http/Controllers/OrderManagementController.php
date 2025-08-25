@@ -99,10 +99,10 @@ class OrderManagementController extends Controller
             $order->update(['status' => $newStatus]);
 
             // Stok işlemleri
-            if ($oldStatus === 'pending' && $newStatus === 'preparing') {
-                // Sipariş onaylandı, stoktan düş
+            if ($newStatus === 'paid' && $oldStatus !== 'paid') {
+                // Sipariş ödendi, stoktan düş
                 $this->stockService->updateStockAfterOrder($order);
-            } elseif ($newStatus === 'canceled' && in_array($oldStatus, ['preparing', 'delivered'])) {
+            } elseif ($newStatus === 'canceled' && in_array($oldStatus, ['preparing', 'delivered', 'paid'])) {
                 // Sipariş iptal edildi, stoku geri yükle
                 $this->stockService->restoreStockAfterCancellation($order);
             }
