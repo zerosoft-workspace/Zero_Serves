@@ -10,6 +10,7 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'order_id',
         'table_id',
         'amount',
         'method',
@@ -19,5 +20,10 @@ class Payment extends Model
     public function table()
     {
         return $this->belongsTo(Table::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }

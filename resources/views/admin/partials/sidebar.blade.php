@@ -22,10 +22,17 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
+                <a href="{{ route('admin.orders.index') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="bi bi-receipt"></i>
                     <span>Siparişler</span>
-
+                    @php
+                        $pendingOrders = \App\Models\Order::where('status', 'pending')->count();
+                        $preparingOrders = \App\Models\Order::where('status', 'preparing')->count();
+                        $totalActive = $pendingOrders + $preparingOrders;
+                    @endphp
+                    @if($totalActive > 0)
+                        <span class="badge bg-danger ms-1">{{ $totalActive }}</span>
+                    @endif
                 </a>
             </li>
             <li>

@@ -37,16 +37,16 @@
                     <a href="{{ route('customer.table.token', $table->token) }}" class="btn btn-sm btn-ghost me-2">
                         <i class="bi bi-house me-1"></i> Dashboard
                     </a>
-                    <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-sm btn-ghost me-2">
+                    <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-sm btn-ghost me-2" onclick="showCustomerSection('menu'); return false;">
                         <i class="bi bi-list-ul me-1"></i> Menü
                     </a>
-                    <a href="{{ route('customer.table.token', $table->token) }}?view=cart" class="btn btn-sm btn-ghost me-2">
+                    <a href="{{ route('customer.table.token', $table->token) }}?view=cart" class="btn btn-sm btn-ghost me-2" onclick="showCustomerSection('cart'); return false;">
                         <i class="bi bi-cart3 me-1"></i> Sepet
                         @if(!empty(session('cart', [])))
                             <span class="badge text-bg-primary ms-1">{{ count(session('cart', [])) }}</span>
                         @endif
                     </a>
-                    <a href="{{ route('customer.table.token', $table->token) }}?view=orders" class="btn btn-sm btn-ghost">
+                    <a href="{{ route('customer.table.token', $table->token) }}?view=orders" class="btn btn-sm btn-ghost" onclick="showCustomerSection('orders'); return false;">
                         <i class="bi bi-clock-history me-1"></i> Siparişler
                     </a>
                 </div>
@@ -74,6 +74,42 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global function to handle customer section navigation
+        function showCustomerSection(sectionName) {
+            // Check if we're on the menu page (has navigation system)
+            const navButtons = document.querySelectorAll('.nav-toggle-btn');
+            const sections = document.querySelectorAll('.content-section');
+            
+            if (navButtons.length > 0 && sections.length > 0) {
+                // We're on the menu page - use the existing navigation system
+                navButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-target') === sectionName) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                sections.forEach(section => {
+                    if (section.id === sectionName) {
+                        section.style.display = 'block';
+                        if (sectionName === 'cart' || sectionName === 'orders') {
+                            section.className = 'col-12 content-section';
+                        } else {
+                            section.className = 'col-12 col-lg-8 content-section';
+                        }
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            } else {
+                // We're on dashboard or other page - redirect with view parameter
+                const currentUrl = window.location.href.split('?')[0];
+                window.location.href = currentUrl + '?view=' + sectionName;
+            }
+        }
+    </script>
 
     @yield('scripts')
 </body>

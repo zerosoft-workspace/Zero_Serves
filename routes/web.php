@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\OrderManagementController;
 
 // Include CSRF token route
 require __DIR__.'/csrf.php';
@@ -44,6 +45,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/notifications', [AdminController::class, 'getNotifications'])->name('notifications');                  // admin.dashboard
 
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');                      // admin.logout
+    Route::get('/logout', [AdminAuthController::class, 'logout'])->name('logout.get');                   // admin.logout (GET fallback)
 
     Route::prefix('tables')->name('tables.')->controller(TableController::class)->group(function () {
         Route::get('/', 'index')->name('index');
@@ -85,6 +87,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/{product}/history', 'stockHistory')->name('history');
         Route::put('/{product}/update', 'updateStock')->name('update');
         Route::post('/bulk-update', 'bulkUpdateStock')->name('bulk-update');
+    });
+
+    Route::prefix('orders')->name('orders.')->controller(OrderManagementController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{order}', 'show')->name('show');
+        Route::put('/{order}/status', 'updateStatus')->name('update-status');
+        Route::delete('/{order}', 'destroy')->name('destroy');
+        Route::post('/bulk-status', 'bulkUpdateStatus')->name('bulk-status');
+        Route::get('/stats/realtime', 'realtimeUpdates')->name('realtime');
+        Route::get('/{order}/print', 'print')->name('print');
+        Route::get('/export/csv', 'export')->name('export');
     });
 });
 
@@ -137,6 +150,7 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
         'prevent.back.history',
     ])->group(function () {
         Route::post('/logout', [WaiterAuthController::class, 'logout'])->name('logout');
+        Route::get('/logout', [WaiterAuthController::class, 'logout'])->name('logout.get');
 
         Route::get('/dashboard', [WaiterController::class, 'index'])->name('dashboard');
         Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('table');

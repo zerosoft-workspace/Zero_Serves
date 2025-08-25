@@ -63,4 +63,9 @@ class Order extends Model
     {
         return $this->items(); // aynı ilişkiye alias
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'order_id', 'id');
+    }
 }

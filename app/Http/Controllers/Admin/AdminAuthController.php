@@ -75,8 +75,21 @@ class AdminAuthController extends Controller
         Log::info('Logout attempt', [
             'email' => Auth::check() ? Auth::user()->email : 'guest',
             'ip' => $request->ip(),
+            'method' => $request->method(),
         ]);
 
+        // GET isteği için CSRF kontrolü yapmayalım
+        if ($request->isMethod('GET')) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            return redirect()
+                ->route('admin.login')
+                ->with('message', 'Başarıyla çıkış yaptınız.');
+        }
+
+        // POST isteği için normal CSRF koruması devam eder
         Auth::logout();
 
         // Oturumu tamamen geçersiz kıl + yeni CSRF üret
@@ -89,7 +102,7 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        // Tercihen landing’e dön; route yoksa admin.login’e
+        // Tercihen landing'e dön; route yoksa admin.login'e
         if (app('router')->has('landing')) {
             return redirect()
                 ->route('landing')
