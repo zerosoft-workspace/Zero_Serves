@@ -5,6 +5,17 @@
 
 @push('styles')
     <style>
+        /* Mobile-first responsive design */
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --border-radius: 0.5rem;
+            --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
         /* Yapışkan sepet */
         .cart-sticky {
             position: sticky;
@@ -14,14 +25,30 @@
         /* Kategori çipleri (yatay kaydırma) */
         .cat-scroller {
             display: flex;
-            gap: .5rem;
+            gap: 0.5rem;
             overflow-x: auto;
-            padding: .25rem 0 .5rem;
+            padding: 0.25rem 0 0.5rem;
             scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .cat-scroller::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .cat-scroller::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+
+        .cat-scroller::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
         }
 
         .cat-chip {
             white-space: nowrap;
+            min-width: fit-content;
         }
 
         /* Metin kısaltma */
@@ -32,20 +59,66 @@
             overflow: hidden;
         }
 
+        /* Ürün kartları */
+        .product-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            background: #f8f9fa;
+        }
+
+        /* Quantity input improvements */
+        .qty-input-group {
+            max-width: 120px;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .qty-input {
+            text-align: center;
+            border-left: 0;
+            border-right: 0;
+            width: 60px;
+        }
+
         /* Mobil alt navigasyon */
         .mobile-nav {
-            position: sticky;
+            position: fixed;
             bottom: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
-            background: var(--bs-body-bg);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-top: 1px solid var(--bs-border-color);
             display: none;
+            padding: 0.5rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .mobile-nav .container {
             display: flex;
-            gap: .5rem;
-            padding: .5rem 0;
+            gap: 0.5rem;
+            padding: 0;
+            max-width: 100%;
         }
 
         .mobile-nav-btn {
@@ -54,39 +127,101 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: .15rem;
-            padding: .4rem .2rem;
-            border-radius: .5rem;
+            gap: 0.25rem;
+            padding: 0.5rem 0.25rem;
+            border-radius: var(--border-radius);
             text-decoration: none;
-            border: 1px solid var(--bs-border-color);
-            color: inherit;
+            border: 1px solid transparent;
+            color: #6c757d;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            position: relative;
         }
 
+        .mobile-nav-btn:hover,
         .mobile-nav-btn.active {
             background: var(--bs-primary-bg-subtle);
             border-color: var(--bs-primary-border-subtle);
+            color: var(--primary-color);
+        }
+
+        .mobile-nav-btn i {
+            font-size: 1.25rem;
         }
 
         .cart-count-badge {
-            margin-left: .25rem;
+            position: absolute;
+            top: -5px;
+            right: 10px;
+            font-size: 0.6rem;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .floating-cart-btn {
             position: fixed;
             right: 1rem;
-            bottom: 4.5rem;
+            bottom: 5rem;
             z-index: 1031;
             display: inline-flex;
             align-items: center;
-            gap: .25rem;
-            border-radius: 999px;
-            padding: .6rem .9rem;
-            background: var(--bs-primary);
+            gap: 0.5rem;
+            border-radius: 50px;
+            padding: 0.75rem 1rem;
+            background: var(--primary-color);
             color: #fff;
             text-decoration: none;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, .18);
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
 
+        .floating-cart-btn:hover {
+            background: #0b5ed7;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        /* Alert improvements */
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            margin-bottom: 1rem;
+        }
+
+        /* Card improvements */
+        .card {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: rgba(13, 110, 253, 0.1);
+            border-bottom: 1px solid rgba(13, 110, 253, 0.2);
+            font-weight: 600;
+        }
+
+        /* Button improvements */
+        .btn {
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        /* Mobile optimizations */
         @media (max-width: 991.98px) {
             .mobile-nav {
                 display: block;
@@ -95,7 +230,84 @@
             .cart-sticky {
                 position: static;
                 top: auto;
+                margin-bottom: 6rem; /* Space for mobile nav */
             }
+
+            .container-fluid {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .product-card .card-img-top {
+                height: 150px;
+            }
+
+            .floating-cart-btn {
+                display: none; /* Hide on mobile, use bottom nav instead */
+            }
+
+            /* Larger touch targets */
+            .btn {
+                min-height: 44px;
+            }
+
+            .qty-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            /* Better spacing on mobile */
+            .card-body {
+                padding: 1rem 0.75rem;
+            }
+
+            .input-group {
+                flex-wrap: nowrap;
+            }
+
+            .input-group .btn {
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .row.g-3 {
+                --bs-gutter-x: 0.75rem;
+            }
+
+            .product-card .card-body {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .card-title {
+                font-size: 0.9rem;
+            }
+
+            .mobile-nav-btn {
+                font-size: 0.7rem;
+                padding: 0.4rem 0.2rem;
+            }
+
+            .mobile-nav-btn i {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Loading states */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Focus states for accessibility */
+        .btn:focus,
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Smooth animations */
+        * {
+            scroll-behavior: smooth;
         }
     </style>
 @endpush
@@ -128,9 +340,10 @@
                 </div>
             </form>
 
+            {{-- Kategori çipleri --}}
             @if($categories->count())
                 <div class="cat-scroller">
-                    <a href="#products"
+                    <a href="#menu"
                         class="btn btn-sm btn-outline-secondary cat-chip {{ request()->has('category') ? '' : 'active' }}">Tümü</a>
                     @foreach($categories as $idx => $cat)
                         <a href="#cat-{{ $idx }}" class="btn btn-sm btn-outline-secondary cat-chip">{{ $cat->name }}</a>
@@ -142,7 +355,7 @@
 
     <div class="row gx-3 gy-4">
         {{-- Ürünler --}}
-        <div class="col-12 col-lg-8" id="products">
+        <div class="col-12 col-lg-8 content-section" id="menu">
             @foreach($categories as $idx => $cat)
                 <div class="mb-3" id="cat-{{ $idx }}">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -168,19 +381,19 @@
                                             @if($p->stock <= 0)
                                                 <span class="badge bg-secondary">Stokta yok</span>
                                             @else
-                                                <form method="POST" action="{{ route('customer.cart.add', $table->token) }}">
+                                                <form method="POST" action="{{ route('customer.cart.add', $table->token) }}" class="add-to-cart-form">
                                                     @csrf
                                                     <input type="hidden" name="product_id" value="{{ $p->id }}">
-                                                    <div class="input-group">
+                                                    <div class="input-group mb-2">
                                                         <button class="btn btn-outline-secondary qty-btn" type="button"
                                                             data-step="-1">−</button>
-                                                        <input type="number" name="qty" class="form-control text-center" min="1"
+                                                        <input type="number" name="qty" class="form-control text-center qty-input" min="1"
                                                             max="{{ $p->stock }}" value="1" inputmode="numeric" pattern="[0-9]*"
                                                             aria-label="Adet">
                                                         <button class="btn btn-outline-secondary qty-btn" type="button"
                                                             data-step="1">+</button>
-                                                        <button class="btn btn-primary">Sepete Ekle</button>
                                                     </div>
+                                                    <button type="submit" class="btn btn-primary w-100">Sepete Ekle</button>
 
                                                     @if(($p->low_stock_threshold ?? 0) > 0 && $p->stock <= $p->low_stock_threshold)
                                                         <div class="small text-warning mt-1">Az kaldı ({{ $p->stock }})</div>
@@ -200,9 +413,9 @@
         </div>
 
         {{-- Sepet & Sipariş --}}
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-4 content-section" id="cart" style="display: none;">
             {{-- Sepet --}}
-            <div id="cart" class="card shadow-sm cart-sticky">
+            <div class="card shadow-sm cart-sticky">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Sepet</strong>
                     <div class="d-flex align-items-center">
@@ -245,17 +458,20 @@
                             <span>Toplam</span>
                             <strong class="fs-5">{{ number_format($sum, 2) }} ₺</strong>
                         </div>
-                       <form method="POST" action="{{ route('customer.checkout', $table->token) }}">
-    @csrf
-    <button type="submit" class="btn btn-success w-100">Siparişi Ver</button>
-</form>
+                        <form method="POST" action="{{ route('customer.checkout', $table->token) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-success w-100">Siparişi Ver</button>
+                        </form>
 
                     @endif
                 </div>
             </div>
 
-            {{-- Mevcut Siparişler --}}
-            <div class="card shadow-sm mt-4" id="orders">
+        </div>
+
+        {{-- Mevcut Siparişler --}}
+        <div class="col-12 col-lg-4 content-section" id="orders" style="display: none;">
+            <div class="card shadow-sm">
                 <div class="card-header"><strong>Mevcut Siparişleriniz</strong></div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -298,37 +514,89 @@
     {{-- Mobil Navigasyon --}}
     <div class="mobile-nav">
         <div class="container">
-            <a href="#products" class="mobile-nav-btn">
-                <i class="bi bi-list-ul"></i><span>Menü</span>
+            <a href="{{ route('customer.table.token', $table->token) }}" class="mobile-nav-btn">
+                <i class="bi bi-house"></i><span>Ana Sayfa</span>
             </a>
-            <a href="#cart" class="mobile-nav-btn">
+            <button type="button" class="mobile-nav-btn nav-toggle-btn active" data-target="menu">
+                <i class="bi bi-list-ul"></i><span>Menü</span>
+            </button>
+            <button type="button" class="mobile-nav-btn nav-toggle-btn" data-target="cart">
                 <i class="bi bi-cart3"></i><span>Sepet</span>
                 @if(!empty(session('cart', [])))
                     <span class="badge text-bg-primary cart-count-badge">{{ count(session('cart', [])) }}</span>
                 @endif
-            </a>
-            <a href="#orders" class="mobile-nav-btn">
+            </button>
+            <button type="button" class="mobile-nav-btn nav-toggle-btn" data-target="orders">
                 <i class="bi bi-clock-history"></i><span>Siparişler</span>
-            </a>
+            </button>
         </div>
     </div>
-
-    {{-- Yüzen Sepet Butonu (mobil) --}}
-    <a href="#cart" class="floating-cart-btn d-lg-none">
-        <i class="bi bi-cart3 me-1"></i>
-        <span>Sepet</span>
-        @if(!empty(session('cart', [])))
-            <span class="badge text-bg-light cart-count-badge">{{ count(session('cart', [])) }}</span>
-        @endif
-    </a>
 @endsection
 
 @section('scripts')
     <script>
+        // CSRF token setup for all AJAX requests
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up CSRF token for all forms and AJAX requests
+            const token = document.querySelector('meta[name="csrf-token"]');
+            if (token) {
+                window.Laravel = {
+                    csrfToken: token.getAttribute('content')
+                };
+                
+                // Add CSRF token to all forms that don't have it
+                document.querySelectorAll('form').forEach(form => {
+                    if (!form.querySelector('input[name="_token"]')) {
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = window.Laravel.csrfToken;
+                        form.appendChild(csrfInput);
+                    }
+                });
+            }
+
+            // Refresh CSRF token periodically to prevent 419 errors
+            setInterval(function() {
+                fetch('/csrf-token', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.csrf_token) {
+                        // Update meta tag
+                        const metaTag = document.querySelector('meta[name="csrf-token"]');
+                        if (metaTag) {
+                            metaTag.setAttribute('content', data.csrf_token);
+                        }
+                        
+                        // Update all form tokens
+                        document.querySelectorAll('input[name="_token"]').forEach(input => {
+                            input.value = data.csrf_token;
+                        });
+                        
+                        // Update global Laravel object
+                        if (window.Laravel) {
+                            window.Laravel.csrfToken = data.csrf_token;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('CSRF token refresh failed:', error);
+                });
+            }, 300000); // Refresh every 5 minutes
+        });
+
         // + / − butonları
         document.addEventListener('click', function (e) {
             const btn = e.target.closest('.qty-btn');
             if (!btn) return;
+            
+            e.preventDefault();
             const group = btn.closest('.input-group');
             const input = group.querySelector('input[name="qty"]');
             const step = parseInt(btn.dataset.step || 0, 10);
@@ -342,34 +610,80 @@
             input.value = val;
         });
 
-        // Mobil navigasyon aktif durumu + smooth scroll
-        document.addEventListener('DOMContentLoaded', function () {
-            const navButtons = document.querySelectorAll('.mobile-nav-btn');
-            const sections = Array.from(['products', 'cart', 'orders']).map(id => document.getElementById(id)).filter(Boolean);
-
-            highlightActiveSection();
-            window.addEventListener('scroll', highlightActiveSection, { passive: true });
-
-            function highlightActiveSection() {
-                let current = '';
-                const y = window.scrollY + 120; // offset
-                sections.forEach(sec => {
-                    const top = sec.offsetTop, h = sec.offsetHeight;
-                    if (y >= top && y < top + h) current = sec.id;
-                });
-                navButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.getAttribute('href').slice(1) === current);
-                });
+        // Form submission with loading states
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            if (submitBtn && !submitBtn.disabled) {
+                // Add loading state
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Yükleniyor...';
+                
+                // Re-enable after 3 seconds as fallback
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 3000);
             }
+        });
+
+        // Navigation toggle system
+        document.addEventListener('DOMContentLoaded', function () {
+            const navButtons = document.querySelectorAll('.nav-toggle-btn');
+            const sections = document.querySelectorAll('.content-section');
+
+            // Show menu by default
+            showSection('menu');
 
             navButtons.forEach(btn => {
                 btn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    const id = this.getAttribute('href').slice(1);
-                    const el = document.getElementById(id);
-                    if (el) window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' });
+                    const target = this.getAttribute('data-target');
+                    
+                    // Remove active class from all buttons
+                    navButtons.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Show target section
+                    showSection(target);
                 });
             });
+
+            function showSection(target) {
+                sections.forEach(section => {
+                    if (section.id === target) {
+                        section.style.display = 'block';
+                        // For desktop, show as col-12 when cart/orders are active
+                        if (target === 'cart' || target === 'orders') {
+                            section.className = 'col-12 content-section';
+                        } else {
+                            section.className = 'col-12 col-lg-8 content-section';
+                        }
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            }
+
+            // Auto-hide alerts after 5 seconds
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+
+        // Handle network errors and show user-friendly messages
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && event.reason.message.includes('419')) {
+                alert('Oturum süresi doldu. Sayfayı yenileyin.');
+                window.location.reload();
+            }
         });
     </script>
 @endsection

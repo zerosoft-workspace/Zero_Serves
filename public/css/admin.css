@@ -255,35 +255,170 @@ body.has-app-header {
     background: #41506a;
 }
 
+/* ===== Mobile Menu Toggle ===== */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1001;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 998;
+}
+
 /* ===== Responsive ===== */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     :root {
         --sidebar-width: 0px;
     }
+    
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
     .admin-sidebar {
         transform: translateX(-100%);
         width: 280px;
+        transition: transform 0.3s ease;
     }
+    
     .admin-sidebar.show {
         transform: translateX(0);
     }
+    
+    .mobile-overlay.show {
+        display: block;
+    }
+    
     .admin-main {
         margin-left: 0 !important;
     }
+    
     .admin-main-inner {
         padding: 1rem;
+        padding-top: 4rem; /* Mobile menu toggle için yer */
     }
-    .stats-grid,
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
     .action-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
+    
     .stats-card,
     .action-card {
         padding: 1rem;
     }
+    
+    .stats-value {
+        font-size: 1.5rem;
+    }
+    
     .btn-action {
         width: 100%;
         justify-content: center;
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    /* Dashboard header responsive */
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    
+    .dashboard-header .d-flex {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-main-inner {
+        padding: 0.75rem;
+        padding-top: 4rem;
+    }
+    
+    .stats-card {
+        padding: 0.75rem;
+    }
+    
+    .stats-value {
+        font-size: 1.25rem;
+    }
+    
+    .stats-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+    }
+    
+    .action-card {
+        padding: 0.75rem;
+    }
+    
+    .btn-action {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ===== Touch Improvements ===== */
+@media (hover: none) and (pointer: coarse) {
+    .stats-card:hover {
+        transform: none;
+    }
+    
+    .btn-action:hover {
+        transform: none;
+    }
+    
+    .sidebar-menu a:hover {
+        transform: none;
+    }
+    
+    /* Daha büyük touch targets */
+    .btn-action {
+        min-height: 48px;
+    }
+    
+    .sidebar-menu a {
+        min-height: 48px;
+        padding: 1rem 1.5rem;
     }
 }

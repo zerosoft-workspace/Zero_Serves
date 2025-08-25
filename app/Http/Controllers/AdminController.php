@@ -59,7 +59,7 @@ class AdminController extends Controller
         // === DETAYLI ANALİTİKLER ===
 
         // En popüler ürün
-        $popularProduct = DB::table('order_items')
+        $popularProductData = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->whereDate('orders.created_at', $today)
@@ -67,6 +67,9 @@ class AdminController extends Controller
             ->groupBy('products.id', 'products.name')
             ->orderBy('total_quantity', 'desc')
             ->first();
+            
+        $popularProduct = $popularProductData ? $popularProductData->name : 'Veri yok';
+        $popularProductQuantity = $popularProductData ? $popularProductData->total_quantity : 0;
 
         // Ortalama sipariş tutarı
         $averageOrderValue = $todayOrders > 0
@@ -164,108 +167,117 @@ class AdminController extends Controller
             ->limit(5)
             ->get();
 
+        // Zaman verileri
+        $currentDate = Carbon::now()->isoFormat('DD MMMM YYYY, dddd');
+        $currentTime = Carbon::now()->format('H:i');
+
         // View'e gönderilecek data
-        $dashboardData = [
-            // Temel istatistikler
-            'totalTables' => $totalTables,
-            'activeTables' => $activeTables,
-            'todayOrders' => $todayOrders,
-            'pendingOrders' => $pendingOrders,
-            'todayRevenue' => $todayRevenue,
-            'todayCustomers' => $todayCustomers,
-            'monthlyRevenue' => $monthlyRevenue,
-            'revenueGrowth' => $revenueGrowth,
-            'averageOrderValue' => $averageOrderValue,
-
-            // Popüler ürün
-            'popularProduct' => $popularProduct ? $popularProduct->name : 'Veri yok',
-            'popularProductQuantity' => $popularProduct ? $popularProduct->total_quantity : 0,
-
-            // Son aktiviteler
-            'recentActivities' => $recentActivities,
-
-            // Sistem durumu
-            'activeUsers' => $activeUsers,
-            'lowStockProducts' => $lowStockProducts,
-            'completedOrders' => $completedOrders,
-
-            // Trend verileri
-            'weeklyData' => $weeklyData,
-
-            // Masa durumu
-            'tableStatus' => $tableStatus,
-
-            // Sipariş durumu
-            'orderStatusDistribution' => $orderStatusDistribution,
-
-            // Kategori istatistikleri
-            'categoryStats' => $categoryStats,
-
-            // Zaman verileri
-            'currentDate' => Carbon::now()->isoFormat('DD MMMM YYYY, dddd'),
-            'currentTime' => Carbon::now()->format('H:i')
-        ];
-
-        return view('admin.dashboard', $dashboardData);
+        return view('admin.dashboard', compact(
+            'totalTables', 'activeTables', 'todayOrders', 'pendingOrders',
+            'todayRevenue', 'todayCustomers', 'monthlyRevenue', 'revenueGrowth',
+            'averageOrderValue', 'popularProduct', 'popularProductQuantity', 'recentActivities',
+            'activeUsers', 'lowStockProducts', 'completedOrders',
+            'weeklyData', 'tableStatus', 'categoryStats',
+            'currentDate', 'currentTime'
+        ));
     }
 
     /**
-     * AJAX endpoint for real-time dashboard updates
+     * Real-time dashboard stats endpoint for AJAX calls
      */
-    public function dashboardStats(Request $request)
+    public function dashboardStats()
     {
         $today = Carbon::today();
-
+        
+        // Temel istatistikler
         $stats = [
-            'pending_orders' => Order::whereIn('status', ['pending', 'preparing'])->count(),
-            'today_revenue' => Order::whereDate('created_at', $today)
-                ->where('status', 'paid')
-                ->sum('total_amount'),
-            'active_tables' => Table::whereHas('orders', function ($query) {
+            'totalTables' => Table::count(),
+            'activeTables' => Table::whereHas('orders', function ($query) {
                 $query->whereIn('status', ['pending', 'preparing'])
                     ->whereDate('created_at', Carbon::today());
             })->count(),
-            'today_orders' => Order::whereDate('created_at', $today)->count(),
-            'timestamp' => now()->format('H:i:s')
+            'todayOrders' => Order::whereDate('created_at', $today)->count(),
+            'pendingOrders' => Order::whereIn('status', ['pending', 'preparing'])->count(),
+            'todayRevenue' => Order::whereDate('created_at', $today)
+                ->where('status', 'paid')
+                ->sum('total_amount'),
+            'todayCustomers' => Order::whereDate('created_at', $today)
+                ->distinct('table_id')
+                ->count('table_id'),
+            'completedOrders' => Order::whereDate('created_at', $today)
+                ->where('status', 'delivered')
+                ->count(),
+            'lowStockProducts' => Product::where('stock_quantity', '<', 10)
+                ->where('is_active', true)
+                ->count(),
+            'activeUsers' => User::where('last_activity', '>', Carbon::now()->subMinutes(30))
+                ->count(),
+            'currentTime' => Carbon::now()->format('H:i:s'),
+            'lastUpdate' => Carbon::now()->format('d.m.Y H:i:s')
         ];
+
+        // Son aktiviteler (sadece son 5 dakikadaki yeni aktiviteler)
+        $recentActivities = Order::with(['table', 'orderItems.product'])
+            ->where('updated_at', '>', Carbon::now()->subMinutes(5))
+            ->orderBy('updated_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'table_name' => $order->table->name ?? 'Masa ' . $order->table_id,
+                    'status' => $order->status,
+                    'total_amount' => $order->total_amount,
+                    'time_ago' => $order->updated_at->diffForHumans(),
+                    'items_count' => $order->orderItems->count(),
+                    'updated_at' => $order->updated_at->toISOString()
+                ];
+            });
+
+        $stats['recentActivities'] = $recentActivities;
+        $stats['hasNewActivities'] = $recentActivities->count() > 0;
 
         return response()->json($stats);
     }
 
     /**
-     * Get recent notifications
+     * Get new notifications for real-time updates
      */
     public function getNotifications()
     {
-        $notifications = [
-            // Bekleyen siparişler
-            Order::where('status', 'pending')
-                ->where('created_at', '>', Carbon::now()->subMinutes(30))
-                ->with('table')
-                ->get()
-                ->map(function ($order) {
-                    return [
-                        'type' => 'new_order',
-                        'message' => "Yeni sipariş: {$order->table->name}",
-                        'time' => $order->created_at->diffForHumans(),
-                        'priority' => 'high'
-                    ];
-                }),
-
-            // Düşük stok uyarıları
-            Product::where('stock_quantity', '<', 5)
-                ->where('is_active', true)
-                ->get()
-                ->map(function ($product) {
-                    return [
-                        'type' => 'low_stock',
-                        'message' => "Düşük stok: {$product->name} ({$product->stock_quantity} adet)",
-                        'time' => 'Az önce',
-                        'priority' => 'medium'
-                    ];
-                })
-        ];
-
-        return response()->json($notifications->flatten());
+        $notifications = [];
+        
+        // Yeni bekleyen siparişler
+        $newOrders = Order::where('status', 'pending')
+            ->where('created_at', '>', Carbon::now()->subMinutes(1))
+            ->with('table')
+            ->get();
+            
+        foreach ($newOrders as $order) {
+            $notifications[] = [
+                'type' => 'new_order',
+                'title' => 'Yeni Sipariş!',
+                'message' => ($order->table->name ?? 'Masa ' . $order->table_id) . ' - ₺' . number_format($order->total_amount, 2),
+                'timestamp' => $order->created_at->toISOString(),
+                'order_id' => $order->id
+            ];
+        }
+        
+        // Düşük stok uyarıları
+        $lowStockCount = Product::where('stock_quantity', '<', 5)
+            ->where('is_active', true)
+            ->count();
+            
+        if ($lowStockCount > 0) {
+            $notifications[] = [
+                'type' => 'low_stock',
+                'title' => 'Stok Uyarısı!',
+                'message' => $lowStockCount . ' ürünün stoğu kritik seviyede',
+                'timestamp' => Carbon::now()->toISOString(),
+                'count' => $lowStockCount
+            ];
+        }
+        
+        return response()->json($notifications);
     }
 }

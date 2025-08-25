@@ -514,19 +514,236 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Real-time dashboard updates
+    let lastUpdateTime = null;
+    
+    function updateDashboardStats(data) {
+        // Güncel saati güncelle
+        const timeElement = document.querySelector('.page-title + p small');
+        if (timeElement) {
+            timeElement.textContent = data.lastUpdate;
+        }
+        
+        // İstatistikleri güncelle
+        updateStatCard('totalTables', data.totalTables);
+        updateStatCard('todayOrders', data.todayOrders);
+        updateStatCard('todayRevenue', '₺' + new Intl.NumberFormat('tr-TR').format(data.todayRevenue));
+        updateStatCard('todayCustomers', data.todayCustomers);
+        
+        // Bekleyen sipariş badge'ini güncelle
+        const pendingBadges = document.querySelectorAll('.badge.bg-danger');
+        pendingBadges.forEach(badge => {
+            if (badge.textContent.includes('bekleyen')) {
+                badge.textContent = data.pendingOrders + ' bekleyen sipariş';
+                badge.style.display = data.pendingOrders > 0 ? 'inline' : 'none';
+            }
+        });
+        
+        // Son aktiviteleri güncelle
+        if (data.hasNewActivities) {
+            updateRecentActivities(data.recentActivities);
+        }
+        
+        // Sistem durumu güncelle
+        updateSystemStatus(data);
+    }
+    
+    function updateStatCard(type, value) {
+        const cards = document.querySelectorAll('.stats-card');
+        cards.forEach(card => {
+            const valueElement = card.querySelector('.stats-value');
+            const labelElement = card.querySelector('.stats-label');
+            
+            if (labelElement) {
+                const label = labelElement.textContent.toLowerCase();
+                if ((type === 'totalTables' && label.includes('masa')) ||
+                    (type === 'todayOrders' && label.includes('sipariş')) ||
+                    (type === 'todayRevenue' && label.includes('ciro')) ||
+                    (type === 'todayCustomers' && label.includes('müşteri'))) {
+                    if (valueElement) {
+                        valueElement.textContent = value;
+                        // Animasyon efekti
+                        valueElement.style.transform = 'scale(1.1)';
+                        setTimeout(() => {
+                            valueElement.style.transform = 'scale(1)';
+                        }, 200);
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateRecentActivities(activities) {
+        const activityList = document.getElementById('activityList');
+        if (activityList && activities.length > 0) {
+            // Yeni aktiviteleri en üste ekle
+            activities.forEach(activity => {
+                const activityHtml = `
+                    <div class="activity-item new-activity">
+                        <div class="activity-icon bg-${
+                            activity.status === 'paid' ? 'success' : 
+                            activity.status === 'pending' ? 'warning' : 'info'
+                        }">
+                            <i class="bi bi-${
+                                activity.status === 'paid' ? 'check-circle' :
+                                activity.status === 'pending' ? 'clock' : 'circle'
+                            }"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                ${activity.table_name} - 
+                                ${
+                                    activity.status === 'paid' ? 'Ödeme tamamlandı' :
+                                    activity.status === 'pending' ? 'Yeni sipariş alındı' :
+                                    'Sipariş güncellendi'
+                                }
+                            </div>
+                            <div class="activity-time">
+                                ${activity.time_ago}
+                                <small class="text-muted ms-2">${activity.items_count} ürün</small>
+                            </div>
+                        </div>
+                        <div class="activity-amount text-${
+                            activity.status === 'paid' ? 'success' : 'muted'
+                        }">
+                            ₺${new Intl.NumberFormat('tr-TR', {minimumFractionDigits: 2}).format(activity.total_amount)}
+                        </div>
+                    </div>
+                `;
+                activityList.insertAdjacentHTML('afterbegin', activityHtml);
+            });
+            
+            // Yeni aktivite animasyonu
+            setTimeout(() => {
+                document.querySelectorAll('.new-activity').forEach(el => {
+                    el.classList.remove('new-activity');
+                });
+            }, 1000);
+        }
+    }
+    
+    function updateSystemStatus(data) {
+        const statusItems = document.querySelectorAll('.status-item');
+        statusItems.forEach(item => {
+            const label = item.querySelector('.status-label');
+            const indicator = item.querySelector('.status-indicator .badge');
+            
+            if (label && indicator) {
+                const labelText = label.textContent.toLowerCase();
+                if (labelText.includes('bekleyen sipariş')) {
+                    indicator.textContent = data.pendingOrders;
+                    indicator.className = `badge ${data.pendingOrders > 0 ? 'bg-warning' : 'bg-success'}`;
+                } else if (labelText.includes('aktif kullanıcı')) {
+                    indicator.textContent = data.activeUsers;
+                } else if (labelText.includes('düşük stok')) {
+                    if (data.lowStockProducts > 0) {
+                        indicator.textContent = data.lowStockProducts;
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            }
+        });
+    }
+    
     function refreshDashboardStats() {
         fetch('{{ route("admin.dashboard.stats") }}')
             .then(response => response.json())
             .then(data => {
-                // burada Chart.js güncellemesi veya HTML içine değer basılacak
-                console.log(data);
+                updateDashboardStats(data);
+                lastUpdateTime = new Date();
+            })
+            .catch(error => {
+                console.error('Dashboard güncelleme hatası:', error);
             });
     }
-
-    // Sayfa yüklendiğinde ve belli aralıklarla çalıştır
-    document.addEventListener("DOMContentLoaded", () => {
+    
+    function checkNotifications() {
+        fetch('{{ route("admin.notifications") }}')
+            .then(response => response.json())
+            .then(notifications => {
+                notifications.forEach(notification => {
+                    showNotification(notification);
+                });
+            })
+            .catch(error => {
+                console.error('Bildirim kontrol hatası:', error);
+            });
+    }
+    
+    function showNotification(notification) {
+        // Toast bildirimi göster
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${
+            notification.type === 'new_order' ? 'success' : 'warning'
+        } alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <strong>${notification.title}</strong>
+            <div>${notification.message}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // 5 saniye sonra otomatik kapat
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+    
+    // Sayfa yüklendiğinde başlat
+    document.addEventListener('DOMContentLoaded', function() {
+        // İlk yükleme
         refreshDashboardStats();
+        checkNotifications();
+        
+        // Periyodik güncellemeler
         setInterval(refreshDashboardStats, 10000); // 10 saniyede bir
+        setInterval(checkNotifications, 30000); // 30 saniyede bir
+        
+        // Manuel yenileme butonu
+        const refreshBtn = document.querySelector('[onclick="refreshActivities()"]');
+        if (refreshBtn) {
+            refreshBtn.onclick = function(e) {
+                e.preventDefault();
+                refreshDashboardStats();
+                this.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+                }, 1000);
+            };
+        }
     });
 </script>
+
+<style>
+.new-activity {
+    background: #f0f9ff;
+    border-left: 3px solid #0ea5e9;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
 @endpush

@@ -14,6 +14,9 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
 
+// Include CSRF token route
+require __DIR__.'/csrf.php';
+
 /*
 |--------------------------------------------------------------------------
 | Admin
@@ -35,46 +38,39 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 
     /** Girişli admin */
-    Route::middleware([
-        'auth',
-        'admin',
-        // varsa alias tanımlıysa kullan; yoksa bu satırı kaldır
-        'session.timeout',
-        'prevent.back.history',
-    ])->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');                  // admin.dashboard
-        Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats'); // admin.dashboard.stats
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');                  // admin.dashboard
+    Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats'); // admin.dashboard.stats
+    Route::get('/notifications', [AdminController::class, 'getNotifications'])->name('notifications');                  // admin.dashboard
 
-        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');                      // admin.logout
+    Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');                      // admin.logout
 
-        Route::prefix('tables')->name('tables.')->controller(TableController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::post('/{table}/clear', 'clear')->whereNumber('table')->name('clear');
-            Route::delete('/{table}', 'destroy')->whereNumber('table')->name('destroy');
-        });
+    Route::prefix('tables')->name('tables.')->controller(TableController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/{table}/clear', 'clear')->whereNumber('table')->name('clear');
+        Route::delete('/{table}', 'destroy')->whereNumber('table')->name('destroy');
+    });
 
-        Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
-        });
+    Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
+    });
 
-        Route::prefix('products')->name('products.')->controller(ProductController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
-            Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate');
-            Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');
-        });
+    Route::prefix('products')->name('products.')->controller(ProductController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
+        Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate');
+        Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');
+    });
 
-        Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::put('/{user}', 'update')->whereNumber('user')->name('update');
-            Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy');
-            Route::get('/{id}/permissions', 'permissions')->whereNumber('id')->name('permissions');
-        });
+    Route::prefix('users')->name('users.')->controller(UserController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{user}', 'update')->whereNumber('user')->name('update');
+        Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy');
+        Route::get('/{id}/permissions', 'permissions')->whereNumber('id')->name('permissions');
     });
 });
 
