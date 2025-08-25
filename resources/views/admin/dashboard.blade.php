@@ -25,6 +25,25 @@
 @endsection
 
 @section('content')
+<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2 class="fw-bold">Dashboard</h2>
+        <p class="text-muted">
+            Hoş geldin, <strong>{{ auth()->user()->name }}</strong>! 
+            {{ \Carbon\Carbon::now()->format('d F Y, l - H:i') }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <span class="badge bg-success">
+            <i class="bi bi-circle-fill me-1"></i> Çevrimiçi
+        </span>
+        @if($pendingOrders > 0)
+            <span class="badge bg-danger">
+                {{ $pendingOrders }} bekleyen sipariş
+            </span>
+        @endif
+    </div>
+</div>
     {{-- Quick Stats --}}
     <div class="stats-grid">
         <div class="stats-card">
