@@ -245,10 +245,11 @@
                             <span>Toplam</span>
                             <strong class="fs-5">{{ number_format($sum, 2) }} ₺</strong>
                         </div>
-                        <form method="POST" action="{{ route('customer.checkout', $table->token) }}">
-                            @csrf
-                            <button class="btn btn-success w-100">Siparişi Ver</button>
-                        </form>
+                       <form method="POST" action="{{ route('customer.checkout', $table->token) }}">
+    @csrf
+    <button type="submit" class="btn btn-success w-100">Siparişi Ver</button>
+</form>
+
                     @endif
                 </div>
             </div>
