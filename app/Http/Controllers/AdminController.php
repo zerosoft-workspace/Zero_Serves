@@ -247,34 +247,47 @@ class AdminController extends Controller
     {
         $notifications = [];
         
-        // Yeni bekleyen siparişler
+        // Yeni siparişler
         $newOrders = Order::where('status', 'pending')
-            ->where('created_at', '>', Carbon::now()->subMinutes(1))
-            ->with('table')
-            ->get();
+            ->where('created_at', '>=', now()->subMinutes(30))
+            ->count();
             
-        foreach ($newOrders as $order) {
+        if ($newOrders > 0) {
             $notifications[] = [
-                'type' => 'new_order',
-                'title' => 'Yeni Sipariş!',
-                'message' => ($order->table->name ?? 'Masa ' . $order->table_id) . ' - ₺' . number_format($order->total_amount, 2),
-                'timestamp' => $order->created_at->toISOString(),
-                'order_id' => $order->id
+                'type' => 'order',
+                'title' => 'Yeni Sipariş',
+                'message' => "{$newOrders} yeni sipariş var",
+                'time' => now()->format('H:i'),
+                'icon' => 'bell'
             ];
         }
         
-        // Düşük stok uyarıları
-        $lowStockCount = Product::where('stock_quantity', '<', 5)
+        // Düşük stok uyarıları - StockService kullan
+        $stockService = app(\App\Services\StockService::class);
+        $lowStockProducts = $stockService->checkAllLowStockProducts();
+        
+        if ($lowStockProducts->count() > 0) {
+            $notifications[] = [
+                'type' => 'stock',
+                'title' => 'Düşük Stok Uyarısı',
+                'message' => "{$lowStockProducts->count()} ürün düşük stokta",
+                'time' => now()->format('H:i'),
+                'icon' => 'exclamation-triangle'
+            ];
+        }
+        
+        // Kritik stok uyarıları
+        $criticalStock = Product::where('stock_quantity', '<=', 0)
             ->where('is_active', true)
             ->count();
             
-        if ($lowStockCount > 0) {
+        if ($criticalStock > 0) {
             $notifications[] = [
-                'type' => 'low_stock',
-                'title' => 'Stok Uyarısı!',
-                'message' => $lowStockCount . ' ürünün stoğu kritik seviyede',
-                'timestamp' => Carbon::now()->toISOString(),
-                'count' => $lowStockCount
+                'type' => 'critical',
+                'title' => 'Kritik Stok Uyarısı',
+                'message' => "{$criticalStock} ürünün stoğu bitti",
+                'time' => now()->format('H:i'),
+                'icon' => 'x-circle'
             ];
         }
         

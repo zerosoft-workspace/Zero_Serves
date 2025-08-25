@@ -13,6 +13,7 @@ use App\Http\Controllers\Waiter\WaiterAuthController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\StockController;
 
 // Include CSRF token route
 require __DIR__.'/csrf.php';
@@ -71,6 +72,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/{user}', 'update')->whereNumber('user')->name('update');
         Route::delete('/{user}', 'destroy')->whereNumber('user')->name('destroy');
         Route::get('/{id}/permissions', 'permissions')->whereNumber('id')->name('permissions');
+    });
+
+    Route::prefix('stock')->name('stock.')->controller(StockController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/low-stock', 'lowStock')->name('low-stock');
+        Route::get('/reports', 'reports')->name('reports');
+        Route::get('/export', 'exportStock')->name('export');
+        Route::get('/stats', 'stockStats')->name('stats');
+        Route::get('/alerts', 'checkStockAlerts')->name('alerts');
+        Route::get('/suggestions', 'restockSuggestions')->name('suggestions');
+        Route::get('/{product}/history', 'stockHistory')->name('history');
+        Route::put('/{product}/update', 'updateStock')->name('update');
+        Route::post('/bulk-update', 'bulkUpdateStock')->name('bulk-update');
     });
 });
 

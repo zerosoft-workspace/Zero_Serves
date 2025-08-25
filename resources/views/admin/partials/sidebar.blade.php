@@ -54,6 +54,19 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('admin.stock.index') }}"
+                    class="{{ request()->routeIs('admin.stock*') ? 'active' : '' }}">
+                    <i class="bi bi-boxes"></i>
+                    <span>Stok Yönetimi</span>
+                    @php
+                        $lowStockCount = \App\Models\Product::whereRaw('stock_quantity <= min_stock_level')->where('is_active', true)->count();
+                    @endphp
+                    @if($lowStockCount > 0)
+                        <span class="badge bg-warning text-dark ms-1">{{ $lowStockCount }}</span>
+                    @endif
+                </a>
+            </li>
+            <li>
                 <a href="#" class="{{ request()->routeIs('admin.ingredients*') ? 'active' : '' }}">
                     <i class="bi bi-egg"></i>
                     <span>Malzemeler</span>
@@ -71,7 +84,7 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="{{ request()->routeIs('admin.reports.inventory*') ? 'active' : '' }}">
+                <a href="{{ route('admin.stock.reports') }}" class="{{ request()->routeIs('admin.stock*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-data"></i>
                     <span>Stok Raporları</span>
                 </a>
