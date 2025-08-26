@@ -56,8 +56,10 @@ body.has-app-header {
     position: relative;
     z-index: 1;
     padding: 10px 0;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
-
 
 .sidebar-title {
     padding: 0.5rem 1.5rem;
@@ -67,24 +69,35 @@ body.has-app-header {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: #94a3b8;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .sidebar-menu {
     list-style: none;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 .sidebar-menu li {
     margin-bottom: 0.25rem;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .sidebar-menu a {
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.5rem;
     text-decoration: none;
-    color: #94a3b8;
+    color: #94a3b8 !important;
     font-weight: 500;
     transition: var(--transition);
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 .sidebar-menu a:hover,
 .sidebar-menu a.active {
@@ -106,10 +119,12 @@ body.has-app-header {
 /* ===== Main ===== */
 .admin-main {
     margin-left: var(--sidebar-width) !important;
-    margin-top: 0 !important; /* üst boşluğu body’de verdik */
+    margin-top: 0 !important; /* üst boşluğu body'de verdik */
     min-height: calc(100vh - var(--navbar-height));
-    background: #fff;
+    background: #f8fafc;
     transition: var(--transition);
+    display: block;
+    visibility: visible;
 }
 .admin-main-inner {
     padding: 2rem;
@@ -243,19 +258,13 @@ body.has-app-header {
     color: #fff;
 }
 
-/* ===== Scrollbar (isteğe bağlı) ===== */
+/* ===== Scrollbar Gizleme ===== */
+.admin-sidebar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
 .admin-sidebar::-webkit-scrollbar {
-    width: 6px;
-}
-.admin-sidebar::-webkit-scrollbar-track {
-    background: #0e1626;
-}
-.admin-sidebar::-webkit-scrollbar-thumb {
-    background: #344155;
-    border-radius: 3px;
-}
-.admin-sidebar::-webkit-scrollbar-thumb:hover {
-    background: #41506a;
+    display: none; /* WebKit browsers */
 }
 
 /* Mobile Menu Toggle artık app-header.css'de tanımlı */
@@ -289,7 +298,7 @@ body.has-app-header {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     backdrop-filter: blur(2px);
 }
@@ -308,9 +317,9 @@ body.has-app-header {
     :root {
         --sidebar-width: 0px;
     }
-    
+
     /* Mobile menu toggle artık app-header'da */
-    
+
     .admin-sidebar {
         transform: translateX(-100%);
         width: 280px;
@@ -320,68 +329,136 @@ body.has-app-header {
         top: 0;
         height: 100vh;
         z-index: 1002;
-        box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
         background: #121a2b !important;
         overflow-y: auto;
         padding-top: var(--navbar-height) !important;
     }
-    
+
+    /* Mobile'da sidebar içeriğinin görünür olması için */
+    .admin-sidebar .sidebar-content {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 1rem 0 !important;
+    }
+
+    /* Sidebar menü öğelerinin görünürlüğü */
+    .admin-sidebar .sidebar-menu,
+    .admin-sidebar .sidebar-title {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .admin-sidebar .sidebar-menu li,
+    .admin-sidebar .sidebar-menu a {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Sidebar açıkken içerik kesinlikle görünür olsun */
+    .admin-sidebar.show .sidebar-content,
+    .admin-sidebar.show .sidebar-menu,
+    .admin-sidebar.show .sidebar-title,
+    .admin-sidebar.show .sidebar-menu li,
+    .admin-sidebar.show .sidebar-menu a {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        color: #94a3b8 !important;
+    }
+
+    .admin-sidebar.show .sidebar-menu a {
+        display: flex !important;
+    }
+
     .admin-sidebar.show {
         transform: translateX(0);
     }
-    
+
     .mobile-overlay.show {
         display: block;
     }
-    
+
     .admin-main {
         margin-left: 0 !important;
-        width: 100%;
+        width: 100% !important;
+        min-height: calc(100vh - var(--navbar-height)) !important;
+        background: #f8fafc !important;
+        display: block !important;
+        visibility: visible !important;
     }
-    
+
     .admin-main-inner {
         padding: 1rem;
         padding-top: 1rem;
         margin-top: 0;
+        display: block !important;
+        visibility: visible !important;
+        min-height: calc(100vh - var(--navbar-height) - 2rem);
     }
-    
+
+    /* Dashboard header mobile düzenlemesi */
+    .dashboard-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem;
+        margin-bottom: 1.5rem !important;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .dashboard-header .d-flex {
+        align-self: stretch;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
     .stats-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .action-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .stats-card,
     .action-card {
         padding: 1rem;
     }
-    
+
     .stats-value {
         font-size: 1.5rem;
     }
-    
+
     .btn-action {
         width: 100%;
         justify-content: center;
         padding: 1rem;
         font-size: 0.9rem;
     }
-    
+
     .action-buttons {
         flex-direction: column;
     }
-    
+
     /* Dashboard header responsive */
     .dashboard-header {
         flex-direction: column;
         align-items: flex-start !important;
         gap: 1rem;
     }
-    
+
     .dashboard-header .d-flex {
         align-self: stretch;
         justify-content: space-between;
@@ -390,30 +467,30 @@ body.has-app-header {
 
 @media (max-width: 480px) {
     /* Mobile menu toggle responsive styles artık app-header.css'de */
-    
+
     .admin-main-inner {
         padding: 0.75rem;
         padding-top: 0.75rem;
     }
-    
+
     .stats-card {
         padding: 0.75rem;
     }
-    
+
     .stats-value {
         font-size: 1.25rem;
     }
-    
+
     .stats-icon {
         width: 36px;
         height: 36px;
         font-size: 1.2rem;
     }
-    
+
     .action-card {
         padding: 0.75rem;
     }
-    
+
     .btn-action {
         padding: 0.75rem;
         font-size: 0.85rem;
@@ -425,20 +502,20 @@ body.has-app-header {
     .stats-card:hover {
         transform: none;
     }
-    
+
     .btn-action:hover {
         transform: none;
     }
-    
+
     .sidebar-menu a:hover {
         transform: none;
     }
-    
+
     /* Daha büyük touch targets */
     .btn-action {
         min-height: 48px;
     }
-    
+
     .sidebar-menu a {
         min-height: 48px;
         padding: 1rem 1.5rem;

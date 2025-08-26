@@ -22,7 +22,8 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('admin.orders.index') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
+                <a href="{{ route('admin.orders.index') }}"
+                    class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="bi bi-receipt"></i>
                     <span>Siparişler</span>
                     @php
@@ -91,7 +92,8 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('admin.stock.reports') }}" class="{{ request()->routeIs('admin.stock*') ? 'active' : '' }}">
+                <a href="{{ route('admin.stock.reports') }}"
+                    class="{{ request()->routeIs('admin.stock*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-data"></i>
                     <span>Stok Raporları</span>
                 </a>
