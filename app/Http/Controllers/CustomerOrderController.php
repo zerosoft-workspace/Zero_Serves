@@ -122,7 +122,7 @@ class CustomerOrderController extends Controller
             Product::find($pid)?->decrement('stock', $row['qty']);
         }
 
-        $table->update(['status' => 'order_pending']);
+        $table->update(['status' => 'occupied']);
 
         session()->forget('cart');
 

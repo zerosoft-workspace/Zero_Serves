@@ -32,8 +32,8 @@ class Table extends Model
         $activeOrder = $this->active_order()->first();
         
         if ($activeOrder) {
-            // Aktif sipariş varsa masa dolu - eski enum değerlerini kullan
-            $this->status = 'order_pending';
+            // Aktif sipariş varsa masa dolu
+            $this->status = 'occupied';
         } else {
             // Aktif sipariş yoksa masa boş
             $this->status = 'empty';
