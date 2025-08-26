@@ -25,60 +25,115 @@
         <a href="{{ route('waiter.dashboard') }}" class="btn btn-outline-secondary btn-sm">← Masalara Dön</a>
     </div>
 
-    @if(!$order)
+    {{-- Mevcut Sipariş --}}
+    @if(!$currentOrder)
         <div class="alert alert-info">Bu masada aktif sipariş bulunmuyor.</div>
     @else
         {{-- CSRF token'ı JS için gizli inputta tutalım --}}
         <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
 
-        <div class="card mb-3" data-order-id="{{ $order->id }}">
-            <div class="card-header">
-                Sipariş #{{ $order->id }} —
-                <strong id="order-status-text">
-                    {{ $statusMap[$order->status] ?? strtoupper($order->status) }}
-                </strong>
+        <div class="card mb-3" data-order-id="{{ $currentOrder->id }}">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock me-2"></i>Mevcut Sipariş #{{ $currentOrder->id }}
+                    <span class="badge bg-light text-dark ms-2" id="order-status-text">
+                        {{ $statusMap[$currentOrder->status] ?? strtoupper($currentOrder->status) }}
+                    </span>
+                </h5>
             </div>
 
             <div class="card-body">
                 {{-- Ürünler --}}
                 <ul class="list-group mb-3">
-                    @foreach($order->items as $item)
+                    @foreach($currentOrder->items as $item)
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-semibold">{{ $item->product->name ?? 'Ürün' }}</div>
                                 <div class="small text-muted">
                                     Adet: x{{ $item->quantity }}
-                                    @isset($item->unit_price)
-                                        — Fiyat: {{ number_format($item->unit_price, 2) }}
+                                    @isset($item->price)
+                                        — Fiyat: {{ number_format($item->price, 2) }} ₺
                                     @endisset
                                 </div>
                             </div>
                             <div class="fw-bold">
-                                {{ number_format($item->line_total ?? (($item->unit_price ?? 0) * ($item->quantity ?? 0)), 2) }}
+                                {{ number_format($item->line_total ?? (($item->price ?? 0) * ($item->quantity ?? 0)), 2) }} ₺
                             </div>
                         </li>
                     @endforeach
                 </ul>
 
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold">Toplam:</span>
+                    <span class="fw-bold fs-5">{{ number_format($currentOrder->total_amount, 2) }} ₺</span>
+                </div>
+
                 {{-- Durum geçiş butonları --}}
                 <div class="d-flex flex-wrap gap-2">
-                    <button id="btn-preparing" class="btn btn-warning" @disabled($order->status !== 'pending')
-                        onclick="changeStatus('{{ route('waiter.orders.status', $order->id) }}','preparing')">
-                        Hazırlanıyor
+                    <button id="btn-preparing" class="btn btn-warning" @disabled($currentOrder->status !== 'pending')
+                        onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','preparing')">
+                        <i class="bi bi-hourglass-split me-1"></i>Hazırlanıyor
                     </button>
 
-                    <button id="btn-delivered" class="btn btn-success" @disabled($order->status !== 'preparing')
-                        onclick="changeStatus('{{ route('waiter.orders.status', $order->id) }}','delivered')">
-                        Teslim Edildi
+                    <button id="btn-delivered" class="btn btn-success" @disabled($currentOrder->status !== 'preparing')
+                        onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','delivered')">
+                        <i class="bi bi-check-circle me-1"></i>Teslim Edildi
                     </button>
 
-                    <button id="btn-paid" class="btn btn-primary" @disabled(!in_array($order->status, ['delivered', 'paid']))
-                        onclick="changeStatus('{{ route('waiter.orders.status', $order->id) }}','paid')">
-                        Ödendi
+                    <button id="btn-paid" class="btn btn-primary" @disabled(!in_array($currentOrder->status, ['delivered', 'paid']))
+                        onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','paid')">
+                        <i class="bi bi-credit-card me-1"></i>Ödendi
                     </button>
                 </div>
 
                 <div id="status-flash" class="mt-3" style="display:none;"></div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Geçmiş Siparişler --}}
+    @if($pastOrders && $pastOrders->count() > 0)
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-archive me-2"></i>Geçmiş Siparişler ({{ $pastOrders->count() }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="pastOrdersAccordion">
+                    @foreach($pastOrders as $index => $pastOrder)
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ $index }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse{{ $index }}" aria-expanded="false" aria-controls="collapse{{ $index }}">
+                                    <div class="d-flex justify-content-between w-100 me-3">
+                                        <span>
+                                            <strong>Sipariş #{{ $pastOrder->id }}</strong>
+                                            <small class="text-muted ms-2">{{ $pastOrder->created_at->format('d.m.Y H:i') }}</small>
+                                        </span>
+                                        <span class="badge bg-success">{{ number_format($pastOrder->total_amount, 2) }} ₺</span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ $index }}" class="accordion-collapse collapse" 
+                                aria-labelledby="heading{{ $index }}" data-bs-parent="#pastOrdersAccordion">
+                                <div class="accordion-body">
+                                    <ul class="list-group list-group-flush">
+                                        @foreach($pastOrder->items as $item)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                <div>
+                                                    <div class="fw-semibold">{{ $item->product->name ?? 'Ürün' }}</div>
+                                                    <div class="small text-muted">Adet: x{{ $item->quantity }}</div>
+                                                </div>
+                                                <span class="text-muted">{{ number_format($item->line_total, 2) }} ₺</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
     @endif

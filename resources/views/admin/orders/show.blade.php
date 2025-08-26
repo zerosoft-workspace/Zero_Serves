@@ -52,6 +52,7 @@
                         <th>Ürün</th>
                         <th>Adet</th>
                         <th>Fiyat</th>
+                        <th>Stok</th>
                         <th>Toplam</th>
                     </tr>
                 </thead>
@@ -61,13 +62,25 @@
                             <td>{{ $item->product->name ?? 'Ürün Bulunamadı' }}</td>
                             <td>{{ $item->quantity }}</td>
                             <td>₺{{ number_format($item->price, 2) }}</td>
+                            <td>
+                                @if($item->product)
+                                    <small class="text-muted">
+                                        {{ $item->product->stock_quantity }}/{{ $item->product->max_stock_level }}
+                                        <span class="badge bg-{{ $item->product->stock_status }} ms-1">
+                                            {{ $item->product->stock_status_text }}
+                                        </span>
+                                    </small>
+                                @else
+                                    <small class="text-muted">-</small>
+                                @endif
+                            </td>
                             <td>₺{{ number_format($item->quantity * $item->price, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="table-light">
-                        <th colspan="3">Toplam</th>
+                        <th colspan="4">Toplam</th>
                         <th>₺{{ number_format($order->total_amount, 2) }}</th>
                     </tr>
                 </tfoot>

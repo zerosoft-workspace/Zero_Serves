@@ -155,6 +155,10 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
         Route::get('/dashboard', [WaiterController::class, 'index'])->name('dashboard');
         Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('table');
         Route::post('/orders/{order}/status', [WaiterController::class, 'updateOrderStatus'])->name('orders.status');
+        
+        // Garson çağrısı yönetimi
+        Route::get('/calls', [WaiterController::class, 'calls'])->name('calls');
+        Route::post('/calls/{call}/respond', [WaiterController::class, 'respondToCall'])->name('calls.respond');
     });
 });
 

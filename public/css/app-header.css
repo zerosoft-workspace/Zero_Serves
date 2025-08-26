@@ -23,6 +23,12 @@
     justify-content: space-between;
     padding: 0 0.75rem;
 }
+.app-brand-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .app-brand {
     display: flex;
     align-items: center;
@@ -30,6 +36,28 @@
     color: var(--nav-text);
     text-decoration: none;
     font-weight: 600;
+}
+
+.mobile-menu-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--nav-text);
+    border: 1px solid var(--nav-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.mobile-menu-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    transform: scale(1.05);
 }
 .app-brand i {
     color: var(--nav-accent);

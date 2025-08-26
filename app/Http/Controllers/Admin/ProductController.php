@@ -24,19 +24,20 @@ class ProductController extends Controller
             'name' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
-            'stock' => 'nullable|integer|min:0',
-            'low_stock_threshold' => 'nullable|integer|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'min_stock_level' => 'required|integer|min:0',
+            'max_stock_level' => 'required|integer|min:0',
         ]);
 
         Product::create([
             'name' => $request->name,
             'price' => $request->price,
             'category_id' => $request->category_id,
-            'stock' => $request->input('stock', 100),
-            'low_stock_threshold' => $request->input('low_stock_threshold', 0),
+            'stock_quantity' => $request->stock_quantity,
+            'min_stock_level' => $request->min_stock_level,
+            'max_stock_level' => $request->max_stock_level,
             'is_active' => true,
         ]);
-
 
         return back()->with('success', 'Ürün eklendi');
     }

@@ -21,13 +21,36 @@ class StockController extends Controller
     /**
      * Stok yönetimi ana sayfası
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->paginate(20);
+        $query = Product::with('category')->where('is_active', true);
 
+        // Arama filtresi
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Kategori filtresi
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Stok durumu filtresi
+        if ($request->filled('stock_status')) {
+            switch ($request->stock_status) {
+                case 'low':
+                    $query->whereRaw('stock_quantity <= min_stock_level');
+                    break;
+                case 'out':
+                    $query->where('stock_quantity', 0);
+                    break;
+                case 'ok':
+                    $query->whereRaw('stock_quantity > min_stock_level');
+                    break;
+            }
+        }
+
+        $products = $query->orderBy('name')->paginate(20);
         $stockReport = $this->stockService->generateStockReport();
         $lowStockProducts = Product::getLowStockProducts();
 
@@ -88,6 +111,7 @@ class StockController extends Controller
         $request->validate([
             'stock_quantity' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
+            'max_stock_level' => 'nullable|integer|min:0',
             'reason' => 'nullable|string|max:255'
         ]);
 
@@ -95,10 +119,16 @@ class StockController extends Controller
         $newStock = $request->stock_quantity;
         $difference = $newStock - $oldStock;
 
-        $product->update([
+        $updateData = [
             'stock_quantity' => $newStock,
             'min_stock_level' => $request->min_stock_level
-        ]);
+        ];
+
+        if ($request->filled('max_stock_level')) {
+            $updateData['max_stock_level'] = $request->max_stock_level;
+        }
+
+        $product->update($updateData);
 
         // Stok hareketini logla
         $movementType = $difference > 0 ? 'increase' : 'decrease';

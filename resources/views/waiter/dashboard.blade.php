@@ -5,9 +5,23 @@
 
 {{-- Üst bar içinde sağ tarafa küçük aksiyon butonu örneği --}}
 @section('header_actions')
-  <a href="{{ route('waiter.dashboard') }}" class="btn btn-sm btn-ghost">
-    <i class="bi bi-arrow-clockwise me-1"></i> Yenile
-  </a>
+  <div class="d-flex gap-2">
+    @if(isset($activeCalls) && $activeCalls->count() > 0)
+      <a href="{{ route('waiter.calls') }}" class="btn btn-sm btn-danger position-relative">
+        <i class="bi bi-bell me-1"></i> Çağrılar
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+          {{ $activeCalls->count() }}
+        </span>
+      </a>
+    @else
+      <a href="{{ route('waiter.calls') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-bell me-1"></i> Çağrılar
+      </a>
+    @endif
+    <a href="{{ route('waiter.dashboard') }}" class="btn btn-sm btn-ghost">
+      <i class="bi bi-arrow-clockwise me-1"></i> Yenile
+    </a>
+  </div>
 @endsection
 
 @section('content')

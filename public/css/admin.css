@@ -51,10 +51,13 @@ body.has-app-header {
     border-top-right-radius: 0 !important;
 }
 
-/* İçeriği header çizgisinden hafifçe aşağı al (Dashboard görünsün) */
+/* Sidebar içeriğinin görünür olması için */
 .admin-sidebar .sidebar-content {
-    padding-top: 10px !important;
+    position: relative;
+    z-index: 1;
+    padding: 10px 0;
 }
+
 
 .sidebar-title {
     padding: 0.5rem 1.5rem;
@@ -63,7 +66,7 @@ body.has-app-header {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--secondary-color);
+    color: #94a3b8;
 }
 
 .sidebar-menu {
@@ -79,7 +82,7 @@ body.has-app-header {
     gap: 0.75rem;
     padding: 0.875rem 1.5rem;
     text-decoration: none;
-    color: var(--secondary-color);
+    color: #94a3b8;
     font-weight: 500;
     transition: var(--transition);
 }
@@ -96,7 +99,7 @@ body.has-app-header {
 
 .sidebar-divider {
     height: 1px;
-    background: #e2e8f0;
+    background: #374151;
     margin: 1rem 1.5rem;
 }
 
@@ -255,21 +258,28 @@ body.has-app-header {
     background: #41506a;
 }
 
-/* ===== Mobile Menu Toggle ===== */
-.mobile-menu-toggle {
-    display: none;
-    position: fixed;
+/* Mobile Menu Toggle artık app-header.css'de tanımlı */
+
+.sidebar-close {
+    position: absolute;
     top: 10px;
-    left: 10px;
-    z-index: 1001;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
+    right: 10px;
+    z-index: 1002;
+}
+
+.sidebar-close button {
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
     font-size: 1.2rem;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    padding: 0.5rem !important;
+    border-radius: 0.5rem;
+    transition: var(--transition);
+}
+
+.sidebar-close button:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .mobile-overlay {
@@ -280,7 +290,8 @@ body.has-app-header {
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    z-index: 998;
+    z-index: 999;
+    backdrop-filter: blur(2px);
 }
 
 /* ===== Responsive ===== */
@@ -298,14 +309,21 @@ body.has-app-header {
         --sidebar-width: 0px;
     }
     
-    .mobile-menu-toggle {
-        display: block;
-    }
+    /* Mobile menu toggle artık app-header'da */
     
     .admin-sidebar {
         transform: translateX(-100%);
         width: 280px;
         transition: transform 0.3s ease;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1002;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+        background: #121a2b !important;
+        overflow-y: auto;
+        padding-top: var(--navbar-height) !important;
     }
     
     .admin-sidebar.show {
@@ -318,11 +336,13 @@ body.has-app-header {
     
     .admin-main {
         margin-left: 0 !important;
+        width: 100%;
     }
     
     .admin-main-inner {
         padding: 1rem;
-        padding-top: 4rem; /* Mobile menu toggle için yer */
+        padding-top: 1rem;
+        margin-top: 0;
     }
     
     .stats-grid {
@@ -369,9 +389,11 @@ body.has-app-header {
 }
 
 @media (max-width: 480px) {
+    /* Mobile menu toggle responsive styles artık app-header.css'de */
+    
     .admin-main-inner {
         padding: 0.75rem;
-        padding-top: 4rem;
+        padding-top: 0.75rem;
     }
     
     .stats-card {

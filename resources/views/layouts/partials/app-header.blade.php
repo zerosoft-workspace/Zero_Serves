@@ -18,10 +18,19 @@
 
 <nav class="app-navbar">
     <div class="app-nav-inner container-fluid">
-        <a href="{{ $brandHref }}" class="app-brand">
-            <i class="bi bi-egg-fried"></i>
-            <span>{{ $brandText }}</span>
-        </a>
+        <div class="app-brand-section">
+            {{-- Mobile Menu Toggle - Sadece admin panelinde göster --}}
+            @if($isAdm)
+                <button class="mobile-menu-toggle d-md-none" id="mobileMenuToggle" aria-label="Menüyü Aç/Kapat">
+                    <i class="bi bi-list"></i>
+                </button>
+            @endif
+            
+            <a href="{{ $brandHref }}" class="app-brand">
+                <i class="bi bi-egg-fried"></i>
+                <span>{{ $brandText }}</span>
+            </a>
+        </div>
 
         <div class="app-actions">
             @auth
@@ -68,6 +77,19 @@
                             <li>
                                 <a class="dropdown-item" href="{{ route('waiter.dashboard') }}">
                                     <i class="bi bi-grid me-2"></i> Masalar
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item position-relative" href="{{ route('waiter.calls') }}">
+                                    <i class="bi bi-bell me-2"></i> Çağrılar
+                                    @php
+                                        $activeCalls = \App\Models\WaiterCall::where('status', 'new')->count();
+                                    @endphp
+                                    @if($activeCalls > 0)
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                            {{ $activeCalls }}
+                                        </span>
+                                    @endif
                                 </a>
                             </li>
                             <li>

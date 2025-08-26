@@ -158,6 +158,7 @@
                         <th>Kategori</th>
                         <th>Mevcut Stok</th>
                         <th>Min. Stok</th>
+                        <th class="d-none d-lg-table-cell">Max. Stok</th>
                         <th>Fiyat</th>
                         <th>Stok Değeri</th>
                         <th>Durum</th>
@@ -204,6 +205,11 @@
                                     {{ $product->min_stock_level }}
                                 </span>
                             </td>
+                            <td class="d-none d-lg-table-cell">
+                                <span class="max-stock text-muted" data-product-id="{{ $product->id }}">
+                                    {{ $product->max_stock_level ?? 1000 }}
+                                </span>
+                            </td>
                             <td>₺{{ number_format($product->price, 2) }}</td>
                             <td>₺{{ number_format($product->stock_quantity * $product->price, 2) }}</td>
                             <td>
@@ -227,7 +233,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4">
+                            <td colspan="10" class="text-center py-4">
                                 <i class="bi bi-box-seam fs-1 text-muted"></i>
                                 <p class="text-muted mt-2">Ürün bulunamadı</p>
                             </td>
@@ -259,13 +265,17 @@
                         <input type="text" class="form-control" id="productName" readonly>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">Mevcut Stok</label>
                             <input type="number" class="form-control" id="stockQuantity" min="0" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">Minimum Stok</label>
                             <input type="number" class="form-control" id="minStockLevel" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Maksimum Stok</label>
+                            <input type="number" class="form-control" id="maxStockLevel" min="0">
                         </div>
                     </div>
                     <div class="mt-3">

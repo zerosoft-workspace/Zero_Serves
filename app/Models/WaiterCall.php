@@ -12,6 +12,14 @@ class WaiterCall extends Model
     protected $fillable = [
         'table_id',
         'status',
+        'responded_at',
+        'completed_at',
+        'responded_by',
+    ];
+
+    protected $casts = [
+        'responded_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function table()

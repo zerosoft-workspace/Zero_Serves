@@ -190,6 +190,7 @@
                         <th>Durum</th>
                         <th>Ürünler</th>
                         <th>Tutar</th>
+                        <th class="d-none d-lg-table-cell">Stok Durumu</th>
                         <th>Toplam Süre</th>
                         <th width="200">İşlemler</th>
                     </tr>
@@ -237,6 +238,33 @@
                             </td>
                             <td>
                                 <strong>₺{{ number_format($order->total_amount, 2) }}</strong>
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                @php
+                                    $lowStockItems = $order->orderItems->filter(function($item) {
+                                        return $item->product && $item->product->isLowStock();
+                                    });
+                                    $outOfStockItems = $order->orderItems->filter(function($item) {
+                                        return $item->product && $item->product->isOutOfStock();
+                                    });
+                                @endphp
+                                
+                                @if($outOfStockItems->count() > 0)
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i>
+                                        {{ $outOfStockItems->count() }} Stok Bitti
+                                    </span>
+                                @elseif($lowStockItems->count() > 0)
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        {{ $lowStockItems->count() }} Düşük Stok
+                                    </span>
+                                @else
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i>
+                                        Stokta
+                                    </span>
+                                @endif
                             </td>
                             <td>
                                 <small class="text-muted">

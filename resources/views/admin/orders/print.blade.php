@@ -112,6 +112,7 @@
                 <th>Ürün</th>
                 <th style="text-align: center;">Adet</th>
                 <th style="text-align: right;">Birim Fiyat</th>
+                <th style="text-align: center;">Stok</th>
                 <th style="text-align: right;">Toplam</th>
             </tr>
         </thead>
@@ -121,13 +122,20 @@
                     <td>{{ $item->product->name ?? 'Ürün Bulunamadı' }}</td>
                     <td style="text-align: center;">{{ $item->quantity }}</td>
                     <td style="text-align: right;">₺{{ number_format($item->price, 2) }}</td>
+                    <td style="text-align: center;">
+                        @if($item->product)
+                            {{ $item->product->stock_quantity }}/{{ $item->product->max_stock_level }}
+                        @else
+                            -
+                        @endif
+                    </td>
                     <td style="text-align: right;">₺{{ number_format($item->quantity * $item->price, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="3" style="text-align: right;"><strong>TOPLAM TUTAR:</strong></td>
+                <td colspan="4" style="text-align: right;"><strong>TOPLAM TUTAR:</strong></td>
                 <td style="text-align: right;"><strong>₺{{ number_format($order->total_amount, 2) }}</strong></td>
             </tr>
         </tfoot>

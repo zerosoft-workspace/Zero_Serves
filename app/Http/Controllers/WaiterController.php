@@ -6,6 +6,7 @@ use App\Models\OrderStatusLog;
 use Illuminate\Http\Request;
 use App\Models\Table;
 use App\Models\Order;
+use App\Models\WaiterCall;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\StockService;
@@ -22,7 +23,14 @@ class WaiterController extends Controller
     public function index()
     {
         $tables = Table::with('active_order')->get();
-        return view('waiter.dashboard', compact('tables'));
+        
+        // Aktif garson çağrıları
+        $activeCalls = WaiterCall::with('table')
+            ->where('status', 'new')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('waiter.dashboard', compact('tables', 'activeCalls'));
     }
 
 
@@ -30,22 +38,30 @@ class WaiterController extends Controller
     public function showTable($id)
     {
         $table = Table::findOrFail($id);
-        // Örnek: showTable($tableId) gibi bir metot içinde…
-        $order = Order::query()
+        
+        // Mevcut sipariş (ödenmemiş)
+        $currentOrder = Order::query()
             ->where('table_id', $table->id)
+            ->whereNotIn('status', ['paid', 'canceled'])
             ->latest('id')
-            ->with(['items.product', 'table']) // <-- ekledik
+            ->with(['items.product', 'table'])
             ->first();
 
-        if ($order) {
-            $order->loadMissing(['items.product']); // <-- kritik satır
-        }
+        // Geçmiş siparişler (ödenmiş)
+        $pastOrders = Order::query()
+            ->where('table_id', $table->id)
+            ->where('status', 'paid')
+            ->with(['items.product'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
         return view('waiter.table', [
             'table' => $table,
-            'order' => $order,
-            // 'statusLogs' => $order?->statusLogs ?? collect(),  // varsa
+            'order' => $currentOrder,
+            'currentOrder' => $currentOrder,
+            'pastOrders' => $pastOrders,
         ]);
-
     }
 
     // Sipariş durumunu güncelle
@@ -106,6 +122,51 @@ class WaiterController extends Controller
             'to' => $to,
             'new_status' => $to,
         ]);
+    }
+
+    // Garson çağrıları listesi
+    public function calls()
+    {
+        $calls = WaiterCall::with('table')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+            
+        return view('waiter.calls', compact('calls'));
+    }
+
+    // Garson çağrısını yanıtla
+    public function respondToCall(Request $request, WaiterCall $call)
+    {
+        $request->validate([
+            'action' => 'required|in:respond,complete'
+        ]);
+
+        $action = $request->action;
+        
+        if ($action === 'respond') {
+            $call->update([
+                'status' => 'responded',
+                'responded_at' => now(),
+                'responded_by' => Auth::id()
+            ]);
+            $message = 'Çağrıya yanıt verildi.';
+        } else {
+            $call->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'responded_by' => Auth::id()
+            ]);
+            $message = 'Çağrı tamamlandı.';
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
 }
