@@ -15,9 +15,9 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\OrderManagementController;
-
+use App\Http\Controllers\PublicMenuController;
 // Include CSRF token route
-require __DIR__.'/csrf.php';
+require __DIR__ . '/csrf.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -107,6 +107,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/', fn() => view('landing'))->name('landing');
+Route::get('/menu', [PublicMenuController::class, 'index'])->name('public.menu');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -155,7 +157,7 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
         Route::get('/dashboard', [WaiterController::class, 'index'])->name('dashboard');
         Route::get('/table/{table}', [WaiterController::class, 'showTable'])->name('table');
         Route::post('/orders/{order}/status', [WaiterController::class, 'updateOrderStatus'])->name('orders.status');
-        
+
         // Garson çağrısı yönetimi
         Route::get('/calls', [WaiterController::class, 'calls'])->name('calls');
         Route::post('/calls/{call}/respond', [WaiterController::class, 'respondToCall'])->name('calls.respond');

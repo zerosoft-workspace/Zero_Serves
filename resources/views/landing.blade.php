@@ -17,7 +17,7 @@
             <ul class="nav-menu" id="nav-menu">
                 <li><a href="#anasayfa">Ana Sayfa</a></li>
                 <li><a href="#hakkimizda">Hakkımızda</a></li>
-                <li><a href="#menu">Menü</a></li>
+                <li><a href="{{ route('public.menu') }}">Menü</a></li>
                 <li><a href="#rezervasyon">Rezervasyon</a></li>
                 <li><a href="#galeri">Galeri</a></li>
                 <li><a href="#iletisim">İletişim</a></li>

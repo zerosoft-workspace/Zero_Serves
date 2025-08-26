@@ -607,108 +607,274 @@ body {
     background-color: #222; /* koyu arka plan */
     color: #f1f1f1;
     padding: 40px 20px 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .footer-container {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.footer-container {
     max-width: 1200px;
     margin: 0 auto;
-  }
-  
-  /* İçerik Bölümü */
-  .footer-content {
+}
+
+/* İçerik Bölümü */
+.footer-content {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 30px;
     margin-bottom: 20px;
-  }
-  
-  .footer-section {
+}
+
+.footer-section {
     flex: 1;
     min-width: 250px;
-  }
-  
-  .footer-section h3 {
+}
+
+.footer-section h3 {
     font-size: 1.5rem;
     margin-bottom: 10px;
     color: #ffcc00; /* vurgulu renk */
-  }
-  
-  .footer-section h4 {
+}
+
+.footer-section h4 {
     font-size: 1.2rem;
     margin-bottom: 12px;
     border-bottom: 2px solid #ffcc00;
     display: inline-block;
     padding-bottom: 4px;
-  }
-  
-  .footer-section p {
+}
+
+.footer-section p {
     line-height: 1.6;
     margin-bottom: 10px;
     color: #ddd;
-  }
-  
-  /* Linkler */
-  .footer-section ul {
+}
+
+/* Linkler */
+.footer-section ul {
     list-style: none;
     padding: 0;
     margin: 0;
-  }
-  
-  .footer-section ul li {
+}
+
+.footer-section ul li {
     margin-bottom: 8px;
-  }
-  
-  .footer-section ul li a {
+}
+
+.footer-section ul li a {
     text-decoration: none;
     color: #f1f1f1;
     transition: color 0.3s;
-  }
-  
-  .footer-section ul li a:hover {
+}
+
+.footer-section ul li a:hover {
     color: #ffcc00;
-  }
-  
-  /* Sosyal Medya */
-  .social-links a {
+}
+
+/* Sosyal Medya */
+.social-links a {
     font-size: 1.3rem;
     margin-right: 12px;
     text-decoration: none;
     color: #f1f1f1;
     transition: transform 0.2s, color 0.3s;
-  }
-  
-  .social-links a:hover {
+}
+
+.social-links a:hover {
     color: #ffcc00;
     transform: scale(1.2);
-  }
-  
-  /* İletişim */
-  .footer-contact p {
+}
+
+/* İletişim */
+.footer-contact p {
     margin: 6px 0;
     font-size: 0.95rem;
-  }
-  
-  /* Alt Kısım */
-  .footer-bottom {
+}
+
+/* Alt Kısım */
+.footer-bottom {
     text-align: center;
     border-top: 1px solid #444;
     padding-top: 15px;
     font-size: 0.9rem;
     color: #aaa;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
+}
+
+/* Responsive */
+@media (max-width: 768px) {
     .footer-content {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
-  
+
     .social-links {
-      margin-top: 10px;
+        margin-top: 10px;
     }
-  }
-  
+}
+/* ===== Public Menü (responsive) ===== */
+:root {
+    --sf-max: 1200px;
+    --sf-gap: 16px;
+    --sf-radius: 14px;
+    --sf-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    --sf-border: 1px solid rgba(0, 0, 0, 0.06);
+    --sf-muted: #6b7280;
+    --sf-accent: #e23d3d; /* buton/kategori vurgusu */
+    --sf-chip: #f3f4f6;
+}
+
+.menu-section {
+    padding: 32px 16px 64px;
+}
+.menu-section .container {
+    max-width: var(--sf-max);
+    margin: 0 auto;
+}
+
+/* Kategori kısayolları */
+.menu-shortcuts {
+    position: sticky;
+    top: 64px; /* navbar yüksekliğine göre ayarla */
+    z-index: 8;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0 16px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.95),
+        rgba(255, 255, 255, 0.75)
+    );
+    backdrop-filter: blur(6px);
+    border-bottom: var(--sf-border);
+}
+.badge-link {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--sf-chip);
+    color: #111;
+    font-size: 14px;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+.badge-link:hover {
+    background: #eaecef;
+    transform: translateY(-1px);
+}
+
+/* Kategori başlığı */
+.menu-category-title {
+    margin: 28px 0 14px;
+    font-size: clamp(20px, 3.2vw, 28px);
+}
+
+/* Kart grid */
+.cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sf-gap);
+}
+@media (min-width: 540px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 900px) {
+    .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--sf-radius);
+    box-shadow: var(--sf-shadow);
+    background: #fff;
+    overflow: hidden;
+    border: var(--sf-border);
+}
+.card-image {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4/3; /* sabit oran; kare istersen 1/1 yap */
+}
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+}
+.card:hover .card-image img {
+    transform: scale(1.04);
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    gap: 12px;
+}
+.card-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 10px;
+}
+.card-title {
+    font-size: 18px;
+    line-height: 1.2;
+    margin: 0;
+}
+.price {
+    font-weight: 700;
+    white-space: nowrap;
+    background: #eef2ff;
+    color: #1f3dd9;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+.card-text {
+    color: var(--sf-muted);
+    font-size: 14px;
+    line-height: 1.45;
+    margin: 0;
+}
+
+/* Buton */
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--sf-accent);
+    color: var(--sf-accent);
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.2s ease;
+    margin-top: auto; /* kartın altına yapış */
+}
+.btn-outline:hover {
+    background: var(--sf-accent);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Boş durum */
+.empty-state {
+    padding: 24px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: var(--sf-border);
+    color: var(--sf-muted);
+}
+
+/* Navbar ile eşit görünüm için ufak düzenler (varsa) */
+.navbar .nav-menu a.active {
+    color: var(--sf-accent);
+}
