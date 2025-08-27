@@ -76,12 +76,12 @@
                         @elseif($isWait)
                             <li>
                                 <a class="dropdown-item" href="{{ route('waiter.dashboard') }}">
-                                    <i class="bi bi-grid me-2"></i> Masalar
+                                    <i class="bi bi-table me-2"></i> Masa Yönetimi
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item position-relative" href="{{ route('waiter.calls') }}">
-                                    <i class="bi bi-bell me-2"></i> Çağrılar
+                                    <i class="bi bi-bell me-2"></i> Çağrı Yönetimi
                                     @php
                                         $activeCalls = \App\Models\WaiterCall::where('status', 'new')->count();
                                     @endphp
@@ -90,6 +90,14 @@
                                             {{ $activeCalls }}
                                         </span>
                                     @endif
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-muted" href="#" onclick="return false;">
+                                    <i class="bi bi-person-badge me-2"></i> {{ $user->name }}
                                 </a>
                             </li>
                             <li>

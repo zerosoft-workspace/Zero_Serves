@@ -153,6 +153,59 @@ class OrderManagementController extends Controller
     }
 
     /**
+     * Toplu sipariş silme
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'order_ids' => 'required|array',
+            'order_ids.*' => 'exists:orders,id'
+        ]);
+
+        $deleted = 0;
+        $errors = [];
+
+        DB::transaction(function() use ($request, &$deleted, &$errors) {
+            foreach ($request->order_ids as $orderId) {
+                try {
+                    $order = Order::with(['orderItems', 'payments'])->find($orderId);
+                    if (!$order) continue;
+
+                    // Stoku geri yükle (eğer sipariş preparing veya delivered durumundaysa)
+                    if (in_array($order->status, ['preparing', 'delivered'])) {
+                        $this->stockService->restoreStockAfterCancellation($order);
+                    }
+                    
+                    // İlişkili kayıtları sil
+                    $order->orderItems()->delete();
+                    $order->payments()->delete();
+                    
+                    // Siparişi sil
+                    $order->delete();
+                    $deleted++;
+                    
+                } catch (\Exception $e) {
+                    $errors[] = "Sipariş #{$orderId}: " . $e->getMessage();
+                }
+            }
+        });
+
+        if (count($errors) > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı siparişler silinemedi',
+                'errors' => $errors,
+                'deleted' => $deleted
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$deleted} sipariş başarıyla silindi"
+        ]);
+    }
+
+    /**
      * Sipariş silme
      */
     public function destroy(Order $order)

@@ -57,16 +57,52 @@ class CategoryController extends Controller
         // Kategoriye ait ürün sayısını al
         $productCount = $category->products_count;
         
-        // Kategoriye ait ürünleri sil
-        \DB::table('products')->where('category_id', $id)->delete();
-        
-        // Kategoriyi sil
-        $category->delete();
-        
-        $message = $productCount > 0 
-            ? "Kategori ve {$productCount} adet ürün silindi"
-            : 'Kategori silindi';
+        try {
+            \DB::transaction(function () use ($category, $id) {
+                // SQLite için foreign key constraint'leri geçici olarak devre dışı bırak
+                \DB::statement('PRAGMA foreign_keys = OFF');
+                
+                // Önce kategoriye ait ürünlerin resimlerini sil
+                $products = \DB::table('products')
+                    ->where('category_id', $id)
+                    ->whereNotNull('image')
+                    ->pluck('image');
+                    
+                foreach ($products as $imagePath) {
+                    if ($imagePath && \Storage::disk('public')->exists($imagePath)) {
+                        \Storage::disk('public')->delete($imagePath);
+                    }
+                }
+                
+                // Order items tablosundan bu ürünlere ait kayıtları sil
+                \DB::statement('DELETE FROM order_items WHERE product_id IN (SELECT id FROM products WHERE category_id = ?)', [$id]);
+                
+                // Kategoriye ait ürünleri sil
+                \DB::table('products')->where('category_id', $id)->delete();
+                
+                // Kategori resmini sil
+                if ($category->image && \Storage::disk('public')->exists($category->image)) {
+                    \Storage::disk('public')->delete($category->image);
+                }
+                
+                // Kategoriyi sil
+                $category->delete();
+                
+                // Foreign key constraint'leri tekrar aktif et
+                \DB::statement('PRAGMA foreign_keys = ON');
+            });
             
-        return back()->with('success', $message);
+            $message = $productCount > 0 
+                ? "Kategori ve {$productCount} adet ürün silindi"
+                : 'Kategori silindi';
+                
+            return back()->with('success', $message);
+            
+        } catch (\Exception $e) {
+            // Hata durumunda foreign key'leri tekrar aç
+            \DB::statement('PRAGMA foreign_keys = ON');
+            
+            return back()->with('error', 'Kategori silinirken hata oluştu: ' . $e->getMessage());
+        }
     }
 }

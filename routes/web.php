@@ -100,13 +100,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::prefix('orders')->name('orders.')->controller(OrderManagementController::class)->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/bulk-status', 'bulkUpdateStatus')->name('bulk-status');
+        Route::delete('/bulk-delete', 'bulkDelete')->name('bulk-delete');
+        Route::get('/stats/realtime', 'realtimeUpdates')->name('realtime');
+        Route::get('/export/csv', 'export')->name('export');
         Route::get('/{order}', 'show')->name('show');
         Route::put('/{order}/status', 'updateStatus')->name('update-status');
         Route::delete('/{order}', 'destroy')->name('destroy');
-        Route::post('/bulk-status', 'bulkUpdateStatus')->name('bulk-status');
-        Route::get('/stats/realtime', 'realtimeUpdates')->name('realtime');
         Route::get('/{order}/print', 'print')->name('print');
-        Route::get('/export/csv', 'export')->name('export');
     });
 });
 
@@ -170,8 +171,17 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
         // Garson çağrısı yönetimi
         Route::get('/calls', [WaiterController::class, 'calls'])->name('calls');
         Route::post('/calls/{call}/respond', [WaiterController::class, 'respondToCall'])->name('calls.respond');
+        Route::delete('/calls/{call}', [WaiterController::class, 'deleteCall'])->name('calls.delete');
     });
 });
+
+// Debug routes (sadece development için)
+if (config('app.debug')) {
+    Route::prefix('debug')->name('debug.')->controller(App\Http\Controllers\DebugController::class)->group(function () {
+        Route::get('/cache-status', 'cacheStatus')->name('cache.status');
+        Route::post('/clear-cache', 'clearCache')->name('cache.clear');
+    });
+}
 
 // (isteğe bağlı) debug logout
 Route::get('/_force_logout', function (\Illuminate\Http\Request $request) {

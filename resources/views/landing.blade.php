@@ -60,7 +60,7 @@
                     geleneksel Türk mutfağını modern dokunuşlarla harmanlamaya devam ediyor.</p>
                 <p>Her tabakta sevgiyle hazırlanan yemeklerimiz, unutulmaz bir deneyim yaşatıyor.
                     Ailenizle birlikte geçireceğiniz keyifli anların adresi olmaktan gurur duyuyoruz.</p>
-                <a href="#rezervasyon" class="cta-button">Rezervasyon Yap</a>
+                <a href="{{ route('reservation.index') }}" class="cta-button">Rezervasyon Yap</a>
             </div>
 
             <div class="info-image fade-in">

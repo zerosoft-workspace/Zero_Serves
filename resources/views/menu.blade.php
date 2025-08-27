@@ -93,7 +93,7 @@
             @endforelse
 
             <div class="fade-in" style="text-align:center;">
-                <a href="{{ url('/#rezervasyon') }}" class="cta-button"
+                <a href="{{ route('reservation.index') }}" class="cta-button"
                     style="background:transparent;border:2px solid var(--primary);color:var(--primary)">Rezervasyon
                     Yap</a>
             </div>
