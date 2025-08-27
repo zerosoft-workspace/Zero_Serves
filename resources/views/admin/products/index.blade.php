@@ -33,7 +33,7 @@
     </div>
     <div class="collapse show" id="productForm">
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.products.store') }}">
+            <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="row g-3">
                     {{-- Temel Bilgiler --}}
@@ -119,6 +119,15 @@
                     <div class="col-md-6">
                         <label class="form-label">Açıklama</label>
                         <textarea name="description" class="form-control" rows="3" placeholder="Ürün açıklaması (isteğe bağlı)"></textarea>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Ürün Fotoğrafı</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
+                        <div class="mt-2" id="imagePreview" style="display: none;">
+                            <img id="previewImg" src="" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                        </div>
                     </div>
                     
                     <div class="col-md-6">
@@ -315,6 +324,133 @@
         </div>
     @endif
 </div>
+
+{{-- Ürün Düzenleme Modal --}}
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>
+                    Ürün Düzenle
+                </h5>
+                <button type="button" class="btn-close" onclick="closeEditModal()" aria-label="Close"></button>
+            </div>
+            <form id="editProductForm" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="row g-3">
+                        {{-- Temel Bilgiler --}}
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Temel Bilgiler
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Ürün Adı <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="edit_name" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Fiyat (₺) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₺</span>
+                                <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Kategori</label>
+                            <select name="category_id" id="edit_category_id" class="form-select">
+                                <option value="">Kategori seçiniz</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Stok Yönetimi --}}
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-boxes me-1"></i>
+                                Stok Yönetimi
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Stok Miktarı</label>
+                            <div class="input-group">
+                                <input type="number" name="stock_quantity" id="edit_stock_quantity" class="form-control" min="0" required>
+                                <span class="input-group-text">adet</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Min. Stok Seviyesi</label>
+                            <div class="input-group">
+                                <input type="number" name="min_stock_level" id="edit_min_stock_level" class="form-control" min="0" required>
+                                <span class="input-group-text">adet</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Max. Stok Kapasitesi</label>
+                            <div class="input-group">
+                                <input type="number" name="max_stock_level" id="edit_max_stock_level" class="form-control" min="0" required>
+                                <span class="input-group-text">adet</span>
+                            </div>
+                        </div>
+
+                        {{-- Ek Bilgiler --}}
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-gear me-1"></i>
+                                Ek Ayarlar
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Ürün Fotoğrafı</label>
+                            <input type="file" name="image" id="edit_image" class="form-control" accept="image/*">
+                            <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
+                            <div class="mt-2" id="editImagePreview">
+                                <img id="editPreviewImg" src="" class="img-thumbnail" style="max-width: 150px; max-height: 150px; display: none;">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Durum</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="edit_is_active">
+                                <label class="form-check-label" for="edit_is_active">
+                                    Ürün aktif olsun
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                        <i class="bi bi-x-circle me-1"></i>
+                        İptal
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Güncelle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -327,6 +463,25 @@ function resetForm() {
     document.querySelector('input[name="min_stock_level"]').value = '10';
     document.querySelector('input[name="max_stock_level"]').value = '1000';
     document.querySelector('input[name="is_active"]').checked = true;
+    // Fotoğraf önizlemesini temizle
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+}
+
+// Modal kapatma fonksiyonu
+function closeEditModal() {
+    const modalElement = document.getElementById('editProductModal');
+    const backdrop = document.getElementById('modal-backdrop');
+    
+    if (modalElement) {
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+    
+    if (backdrop) {
+        backdrop.remove();
+    }
 }
 
 // Ürün listesini yenile
@@ -334,10 +489,86 @@ function refreshProducts() {
     location.reload();
 }
 
-// Ürün düzenle (placeholder)
+// Ürün düzenle
 function editProduct(productId) {
-    // Modal açılacak veya edit sayfasına yönlendirilecek
-    alert('Ürün düzenleme özelliği yakında eklenecek. ID: ' + productId);
+    console.log('editProduct called with ID:', productId);
+    
+    // Modal'ı direkt göster
+    const modalElement = document.getElementById('editProductModal');
+    if (modalElement) {
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        document.body.classList.add('modal-open');
+        
+        // Backdrop ekle
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = 'modal-backdrop';
+        document.body.appendChild(backdrop);
+    } else {
+        console.error('Modal element bulunamadı!');
+        return;
+    }
+    
+    // Ürün bilgilerini getir
+    fetch(`/admin/products/${productId}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(product => {
+            console.log('Product data:', product);
+            
+            // Form alanlarını doldur
+            const nameInput = document.getElementById('edit_name');
+            const priceInput = document.getElementById('edit_price');
+            const categorySelect = document.getElementById('edit_category_id');
+            const stockInput = document.getElementById('edit_stock_quantity');
+            const minStockInput = document.getElementById('edit_min_stock_level');
+            const maxStockInput = document.getElementById('edit_max_stock_level');
+            const descriptionInput = document.getElementById('edit_description');
+            const activeInput = document.getElementById('edit_is_active');
+            
+            if (nameInput) nameInput.value = product.name || '';
+            if (priceInput) priceInput.value = product.price || '';
+            if (categorySelect) categorySelect.value = product.category_id || '';
+            if (stockInput) stockInput.value = product.stock_quantity || 0;
+            if (minStockInput) minStockInput.value = product.min_stock_level || 0;
+            if (maxStockInput) maxStockInput.value = product.max_stock_level || 0;
+            if (descriptionInput) descriptionInput.value = product.description || '';
+            if (activeInput) activeInput.checked = product.is_active == 1;
+            
+            // Mevcut fotoğrafı göster
+            const editPreviewImg = document.getElementById('editPreviewImg');
+            if (editPreviewImg) {
+                if (product.image) {
+                    editPreviewImg.src = `/storage/${product.image}`;
+                    editPreviewImg.style.display = 'block';
+                } else {
+                    editPreviewImg.style.display = 'none';
+                }
+            }
+            
+            // File input'u temizle
+            const imageInput = document.getElementById('edit_image');
+            if (imageInput) imageInput.value = '';
+            
+            // Form action'ını güncelle
+            const form = document.getElementById('editProductForm');
+            if (form) {
+                form.action = `/admin/products/${productId}`;
+                console.log('Form action set to:', form.action);
+            }
+            
+            // Form alanları doldurulduktan sonra modal zaten açık
+        })
+        .catch(error => {
+            console.error('Ürün bilgileri alınırken hata:', error);
+            alert('Ürün bilgileri alınırken bir hata oluştu: ' + error.message);
+        });
 }
 
 // Ürün sil
@@ -364,9 +595,108 @@ function deleteProduct(productId) {
     }
 }
 
+// Fotoğraf önizleme
+function previewImage(input) {
+    const file = input.files[0];
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (file) {
+        // Dosya boyutu kontrolü (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Dosya boyutu 2MB\'dan büyük olamaz!');
+            input.value = '';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        // Dosya türü kontrolü
+        if (!file.type.startsWith('image/')) {
+            alert('Lütfen geçerli bir resim dosyası seçin!');
+            input.value = '';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// Düzenleme modal'ında fotoğraf önizleme
+function previewEditImage(input) {
+    const file = input.files[0];
+    const previewImg = document.getElementById('editPreviewImg');
+    
+    if (file) {
+        // Dosya boyutu kontrolü (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Dosya boyutu 2MB\'dan büyük olamaz!');
+            input.value = '';
+            previewImg.style.display = 'none';
+            return;
+        }
+        
+        // Dosya türü kontrolü
+        if (!file.type.startsWith('image/')) {
+            alert('Lütfen geçerli bir resim dosyası seçin!');
+            input.value = '';
+            previewImg.style.display = 'none';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewImg.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // Dosya seçilmediğinde önizlemeyi gizle
+        previewImg.style.display = 'none';
+    }
+}
+
 // Form validation
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded');
+    
     const form = document.querySelector('#productForm form');
+    const imageInput = document.querySelector('input[name="image"]');
+    const editImageInput = document.getElementById('edit_image');
+    const editForm = document.getElementById('editProductForm');
+    
+    console.log('Form elements found:', {
+        form: !!form,
+        imageInput: !!imageInput,
+        editImageInput: !!editImageInput,
+        editForm: !!editForm
+    });
+    
+    // Ekleme formunda fotoğraf seçildiğinde önizleme göster
+    if (imageInput) {
+        imageInput.addEventListener('change', function() {
+            console.log('Add image input changed');
+            previewImage(this);
+        });
+    }
+    
+    // Düzenleme formunda fotoğraf seçildiğinde önizleme göster
+    if (editImageInput) {
+        editImageInput.addEventListener('change', function() {
+            console.log('Edit image input changed');
+            previewEditImage(this);
+        });
+    } else {
+        console.log('Edit image input not found!');
+    }
+    
     if (form) {
         form.addEventListener('submit', function(e) {
             const stockQuantity = parseInt(document.querySelector('input[name="stock_quantity"]').value) || 0;
@@ -390,6 +720,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Minimum stok seviyesi, maksimum stok seviyesinden küçük olmalıdır!');
                 return false;
             }
+        });
+    }
+    
+    // Düzenleme formu validation ve submit
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            console.log('Edit form submitted'); // Debug
+            
+            const stockQuantity = parseInt(document.getElementById('edit_stock_quantity').value) || 0;
+            const minStock = parseInt(document.getElementById('edit_min_stock_level').value) || 0;
+            const maxStock = parseInt(document.getElementById('edit_max_stock_level').value) || 0;
+            
+            if (minStock > stockQuantity) {
+                e.preventDefault();
+                alert('Minimum stok seviyesi, mevcut stok miktarından büyük olamaz!');
+                return false;
+            }
+            
+            if (maxStock < stockQuantity) {
+                e.preventDefault();
+                alert('Maksimum stok seviyesi, mevcut stok miktarından küçük olamaz!');
+                return false;
+            }
+            
+            if (minStock >= maxStock) {
+                e.preventDefault();
+                alert('Minimum stok seviyesi, maksimum stok seviyesinden küçük olmalıdır!');
+                return false;
+            }
+            
+            // Form action kontrolü
+            if (!this.action || this.action.includes('undefined')) {
+                e.preventDefault();
+                alert('Form action URL\'si ayarlanmamış. Lütfen sayfayı yenileyin.');
+                return false;
+            }
+            
+            console.log('Form action:', this.action); // Debug
         });
     }
 });

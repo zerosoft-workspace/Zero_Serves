@@ -32,14 +32,23 @@ class CustomerOrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Check if this is the first visit or dashboard request
+        // Handle different view types
         $view = request('view');
-        if (!$view) {
-            // First visit - show dashboard
-            return view('customer.dashboard', compact('categories', 'table', 'orders'));
+        
+        switch ($view) {
+            case 'menu':
+                return view('customer.menu', compact('categories', 'table', 'orders'));
+            
+            case 'cart':
+                return view('customer.cart', compact('categories', 'table', 'orders'));
+            
+            case 'orders':
+                return view('customer.orders', compact('categories', 'table', 'orders'));
+            
+            default:
+                // First visit or dashboard request - show dashboard
+                return view('customer.dashboard', compact('categories', 'table', 'orders'));
         }
-
-        return view('customer.menu', compact('categories', 'table', 'orders'));
     }
 
     // Sepete ekle

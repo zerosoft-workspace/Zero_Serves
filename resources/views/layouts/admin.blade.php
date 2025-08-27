@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="{{ asset('css/app-header.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
 
+    {{-- CSRF Handler --}}
+    <script src="{{ asset('js/csrf-handler.js') }}" defer></script>
+
     @stack('styles')
 </head>
 

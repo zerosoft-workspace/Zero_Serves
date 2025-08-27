@@ -16,14 +16,16 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\OrderManagementController;
 use App\Http\Controllers\PublicMenuController;
-// Include CSRF token route
-require __DIR__ . '/csrf.php';
 
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
+// CSRF token yenileme endpoint'i
+Route::get('/csrf-token', [App\Http\Controllers\CSRFController::class, 'refreshToken'])->name('csrf.refresh');
+
+// Admin login routes (accessible to guests)
 Route::prefix('admin')->name('admin.')->group(function () {
     // /admin → akıllı giriş noktası
     Route::get('/', function () {
@@ -31,14 +33,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('admin.dashboard');
         }
         return redirect()->route('admin.login');
-    })->name('entry'); // 👈 landing'ten buna link ver
+    })->name('entry'); // landing'ten buna link ver
 
     /** Misafir (login ekranları) */
     Route::middleware(['guest'])->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');      // admin.login
         Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');        // admin.login.post
     });
+});
 
+// Admin authenticated routes
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     /** Girişli admin */
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');                  // admin.dashboard
     Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats'); // admin.dashboard.stats
@@ -57,12 +62,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::get('/{id}', 'show')->whereNumber('id')->name('show');
+        Route::put('/{id}', 'update')->whereNumber('id')->name('update');
         Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
     });
 
     Route::prefix('products')->name('products.')->controller(ProductController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::get('/{id}', 'show')->whereNumber('id')->name('show');
+        Route::put('/{id}', 'update')->whereNumber('id')->name('update');
         Route::delete('/{id}', 'destroy')->whereNumber('id')->name('destroy');
         Route::patch('/{id}/deactivate', 'deactivate')->whereNumber('id')->name('deactivate');
         Route::patch('/{id}/activate', 'activate')->whereNumber('id')->name('activate');
