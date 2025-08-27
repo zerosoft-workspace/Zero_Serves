@@ -133,12 +133,17 @@ class ProductController extends Controller
     {
         $p = Product::findOrFail($id);
 
-        // Siparişlerde kullanılmışsa silme, pasifleştir
-        $used = OrderItem::where('product_id', $p->id)->exists();
+        // Siparişlerde kullanılmışsa silme, pasifleştir - optimize edilmiş
+        $used = \DB::table('order_items')->where('product_id', $id)->exists();
 
         if ($used) {
             $p->update(['is_active' => false]);
             return back()->with('success', 'Ürün siparişlerde kullanılıyor. Silinmedi, pasifleştirildi.');
+        }
+
+        // Ürün fotoğrafını sil
+        if ($p->image && \Storage::disk('public')->exists($p->image)) {
+            \Storage::disk('public')->delete($p->image);
         }
 
         $p->delete();

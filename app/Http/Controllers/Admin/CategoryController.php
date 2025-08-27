@@ -10,7 +10,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::withCount('products')->get();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -95,20 +95,27 @@ class CategoryController extends Controller
 
     public function destroy($id)
     {
-        $category = Category::with('products')->findOrFail($id);
+        $category = Category::withCount('products')->findOrFail($id);
         
         // Kategoriye ait ürün sayısını al
-        $productCount = $category->products->count();
+        $productCount = $category->products_count;
         
-        // Kategoriye ait ürünlerin fotoğraflarını sil
-        foreach ($category->products as $product) {
-            if ($product->image && \Storage::disk('public')->exists($product->image)) {
-                \Storage::disk('public')->delete($product->image);
+        // Kategoriye ait ürünlerin fotoğraflarını sil - optimize edilmiş
+        if ($productCount > 0) {
+            $productImages = \DB::table('products')
+                ->where('category_id', $id)
+                ->whereNotNull('image')
+                ->pluck('image');
+                
+            foreach ($productImages as $image) {
+                if (\Storage::disk('public')->exists($image)) {
+                    \Storage::disk('public')->delete($image);
+                }
             }
         }
         
         // Kategoriye ait ürünleri sil
-        $category->products()->delete();
+        \DB::table('products')->where('category_id', $id)->delete();
         
         // Kategori fotoğrafını sil
         if ($category->image && \Storage::disk('public')->exists($category->image)) {

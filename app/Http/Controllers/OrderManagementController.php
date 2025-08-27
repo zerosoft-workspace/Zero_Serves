@@ -24,7 +24,8 @@ class OrderManagementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Order::with(['table', 'orderItems.product'])
+        $query = Order::with(['table:id,name', 'orderItems:order_id,product_id,quantity'])
+            ->select(['id', 'table_id', 'status', 'total_amount', 'created_at', 'updated_at'])
             ->orderBy('created_at', 'desc');
 
         // Filtreleme
@@ -56,11 +57,11 @@ class OrderManagementController extends Controller
 
         $orders = $query->paginate(20);
 
-        // İstatistikler
-        $stats = $this->getOrderStats();
+        // İstatistikler - optimize edilmiş
+        $stats = $this->getOrderStatsOptimized();
         
-        // Masalar (filtreleme için)
-        $tables = Table::where('is_active', true)->orderBy('name')->get();
+        // Masalar (filtreleme için) - cache edilebilir
+        $tables = Table::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return view('admin.orders.index', compact('orders', 'stats', 'tables'));
     }
@@ -198,6 +199,35 @@ class OrderManagementController extends Controller
             'today_revenue' => Order::whereDate('created_at', $today)
                 ->where('status', 'paid')
                 ->sum('total_amount'),
+            'avg_preparation_time' => $this->getAveragePreparationTime()
+        ];
+    }
+
+    /**
+     * Optimize edilmiş sipariş istatistikleri
+     */
+    public function getOrderStatsOptimized()
+    {
+        $today = now()->startOfDay();
+        
+        // Tek query ile tüm istatistikleri al
+        $stats = DB::table('orders')
+            ->select([
+                DB::raw('COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END) as total_today'),
+                DB::raw('COUNT(CASE WHEN status = "pending" THEN 1 END) as pending'),
+                DB::raw('COUNT(CASE WHEN status = "preparing" THEN 1 END) as preparing'),
+                DB::raw('COUNT(CASE WHEN status = "delivered" THEN 1 END) as delivered'),
+                DB::raw('SUM(CASE WHEN DATE(created_at) = ? AND status = "paid" THEN total_amount ELSE 0 END) as today_revenue')
+            ])
+            ->setBindings([$today->format('Y-m-d'), $today->format('Y-m-d')])
+            ->first();
+
+        return [
+            'total_today' => $stats->total_today,
+            'pending' => $stats->pending,
+            'preparing' => $stats->preparing,
+            'delivered' => $stats->delivered,
+            'today_revenue' => $stats->today_revenue,
             'avg_preparation_time' => $this->getAveragePreparationTime()
         ];
     }
