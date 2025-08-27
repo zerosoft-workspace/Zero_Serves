@@ -10,28 +10,7 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo">Soft Food</a>
-
-            <ul class="nav-menu" id="nav-menu">
-                <li><a href="#anasayfa">Ana Sayfa</a></li>
-                <li><a href="#hakkimizda">Hakkımızda</a></li>
-                <li><a href="{{ route('public.menu') }}">Menü</a></li>
-                <li><a href="#rezervasyon">Rezervasyon</a></li>
-                <li><a href="#galeri">Galeri</a></li>
-                <li><a href="#iletisim">İletişim</a></li>
-                <li><a href="{{ route('admin.entry') }}">Admin Paneli</a></li>
-                <li><a href="{{ route(name: 'waiter.entry') }}">Garson Paneli</a></li>
-            </ul>
-
-            <div class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </nav>
+    @include('layouts.partials.public-navbar')
 
     <!-- Hero Section -->
     <section class="hero" id="anasayfa">
@@ -41,7 +20,7 @@
             <p class="hero-description">
                 Modern mutfak sanatı ile geleneksel tatları buluşturan eşsiz bir deneyim
             </p>
-            <a href="#menu" class="cta-button">Menüyü İncele</a>
+            <a href="{{ route('public.menu') }}" class="cta-button">Menüyü İncele</a>
         </div>
     </section>
 
@@ -136,44 +115,8 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Soft Food</h3>
-                    <p>2010'dan beri değişmeyen lezzet, değişmeyen sıcaklık ile hizmetinizdeyiz.</p>
-                    <div class="social-links">
-                        <a href="#" aria-label="Facebook">📘</a>
-                        <a href="#" aria-label="Instagram">📷</a>
-                        <a href="#" aria-label="Twitter">🐦</a>
-                    </div>
-                </div>
 
-                <div class="footer-section">
-                    <h4>Hızlı Linkler</h4>
-                    <ul>
-                        <li><a href="#anasayfa">Ana Sayfa</a></li>
-                        <li><a href="#hakkimizda">Hakkımızda</a></li>
-                        <li><a href="#menu">Menü</a></li>
-                        <li><a href="#rezervasyon">Rezervasyon</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h4>İletişim</h4>
-                    <div class="footer-contact">
-                        <p>📞 +90 555 123 45 67</p>
-                        <p>📧 info@softfood.com</p>
-                        <p>📍 Bandırma, Balıkesir</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="footer-bottom">
-                <p>&copy; 2024 Soft Food. Tüm hakları saklıdır.</p>
-            </div>
-        </div>
-    </footer>
+    @include('layouts.partials.public-footer')
 
     <script>
         // Menü toggle

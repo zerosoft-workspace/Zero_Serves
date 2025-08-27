@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\OrderManagementController;
 use App\Http\Controllers\PublicMenuController;
-
+use App\Http\Controllers\ReservationController;
 /*
 |--------------------------------------------------------------------------
 | Admin
@@ -117,8 +117,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 */
 Route::get('/', fn() => view('landing'))->name('landing');
 Route::get('/menu', [PublicMenuController::class, 'index'])->name('public.menu');
-
-
+Route::get('/reservation', [ReservationController::class, 'index'])->name('reservation.index');
+Route::post('/reservation', [ReservationController::class, 'store'])->name('reservation.store');
 /*
 |--------------------------------------------------------------------------
 | Müşteri (QR)
