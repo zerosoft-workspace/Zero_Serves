@@ -27,7 +27,6 @@ class ProductController extends Controller
             'stock_quantity' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'max_stock_level' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'description' => 'nullable|string|max:500',
         ]);
 
@@ -41,34 +40,6 @@ class ProductController extends Controller
             'description' => $request->description,
             'is_active' => $request->has('is_active'),
         ];
-
-        // Fotoğraf yükleme işlemi
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            
-            // Debug bilgisi
-            \Log::info('Image upload attempt', [
-                'original_name' => $image->getClientOriginalName(),
-                'size' => $image->getSize(),
-                'mime_type' => $image->getMimeType(),
-                'is_valid' => $image->isValid()
-            ]);
-            
-            if ($image->isValid()) {
-                try {
-                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $imagePath = $image->storeAs('products', $imageName, 'public');
-                    $data['image'] = $imagePath;
-                    \Log::info('Image uploaded successfully', ['path' => $imagePath]);
-                } catch (\Exception $e) {
-                    \Log::error('Image upload failed', ['error' => $e->getMessage()]);
-                    return back()->withErrors(['image' => 'Fotoğraf yüklenirken hata oluştu: ' . $e->getMessage()]);
-                }
-            } else {
-                \Log::error('Invalid image file');
-                return back()->withErrors(['image' => 'Geçersiz resim dosyası']);
-            }
-        }
 
         Product::create($data);
 
@@ -96,7 +67,6 @@ class ProductController extends Controller
             'stock_quantity' => 'required|integer|min:0',
             'min_stock_level' => 'required|integer|min:0',
             'max_stock_level' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'description' => 'nullable|string|max:500',
         ]);
 
@@ -110,19 +80,6 @@ class ProductController extends Controller
             'description' => $request->description,
             'is_active' => $request->has('is_active'),
         ];
-
-        // Fotoğraf güncelleme işlemi
-        if ($request->hasFile('image')) {
-            // Eski fotoğrafı sil
-            if ($product->image && \Storage::disk('public')->exists($product->image)) {
-                \Storage::disk('public')->delete($product->image);
-            }
-            
-            $image = $request->file('image');
-            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->storeAs('products', $imageName, 'public');
-            $data['image'] = $imagePath;
-        }
 
         $product->update($data);
 
@@ -139,11 +96,6 @@ class ProductController extends Controller
         if ($used) {
             $p->update(['is_active' => false]);
             return back()->with('success', 'Ürün siparişlerde kullanılıyor. Silinmedi, pasifleştirildi.');
-        }
-
-        // Ürün fotoğrafını sil
-        if ($p->image && \Storage::disk('public')->exists($p->image)) {
-            \Storage::disk('public')->delete($p->image);
         }
 
         $p->delete();

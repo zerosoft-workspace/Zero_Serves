@@ -6,7 +6,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold">Kategori Yönetimi</h2>
-            <p class="text-muted mb-0">Kategorileri yönetin ve fotoğraflarını ekleyin</p>
+            <p class="text-muted mb-0">Kategorileri yönetin</p>
         </div>
         <button class="btn btn-primary d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#categoryForm">
             <i class="bi bi-plus-circle"></i> Yeni Kategori
@@ -44,16 +44,6 @@
                                 required>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Kategori Fotoğrafı</label>
-                            <input type="file" name="image" id="category_image" class="form-control" accept="image/*"
-                                onchange="previewCategoryImage(this)">
-                            <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
-                            <div class="mt-2" id="imagePreview" style="display: none;">
-                                <img id="previewImg" src="" class="img-thumbnail"
-                                    style="max-width: 150px; max-height: 150px;">
-                            </div>
-                        </div>
 
                         <div class="col-12">
                             <hr class="my-3">
@@ -102,19 +92,8 @@
                             <tr>
                                 <td class="fw-bold text-muted">{{ $cat->id }}</td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        @if(!empty($cat->image))
-                                            <img src="{{ asset('storage/' . $cat->image) }}" class="rounded me-2" width="32"
-                                                height="32" style="object-fit: cover;">
-                                        @else
-                                            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center"
-                                                style="width: 32px; height: 32px;">
-                                                <i class="bi bi-image text-muted"></i>
-                                            </div>
-                                        @endif
-                                        <div>
-                                            <h6 class="mb-0">{{ $cat->name }}</h6>
-                                        </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ $cat->name }}</h6>
                                     </div>
                                 </td>
                                 <td class="d-none d-md-table-cell">
@@ -172,16 +151,6 @@
                                 <input type="text" name="name" id="edit_category_name" class="form-control" required>
                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Kategori Fotoğrafı</label>
-                                <input type="file" name="image" id="edit_category_image" class="form-control"
-                                    accept="image/*" onchange="previewEditCategoryImage(this)">
-                                <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
-                                <div class="mt-2" id="editCategoryImagePreview">
-                                    <img id="editCategoryPreviewImg" src="" class="img-thumbnail"
-                                        style="max-width: 150px; max-height: 150px; display: none;">
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -206,12 +175,6 @@
         function resetCategoryForm() {
             const form = document.getElementById('categoryAddForm');
             form?.reset();
-            const preview = document.getElementById('imagePreview');
-            const img = document.getElementById('previewImg');
-            if (preview && img) {
-                preview.style.display = 'none';
-                img.src = '';
-            }
         }
 
         // Kategori listesini yenile
@@ -227,13 +190,6 @@
                 .then(category => {
                     document.getElementById('edit_category_name').value = category.name || '';
 
-                    const previewImg = document.getElementById('editCategoryPreviewImg');
-                    if (category.image) {
-                        previewImg.src = `/storage/${category.image}`;
-                        previewImg.style.display = 'block';
-                    } else {
-                        previewImg.style.display = 'none';
-                    }
 
                     const form = document.getElementById('editCategoryForm');
                     form.action = `/admin/categories/${categoryId}`;
@@ -281,43 +237,10 @@
                 });
         }
 
-        // Fotoğraf önizleme (ekleme)
-        function previewCategoryImage(input) {
-            const file = input.files[0];
-            const preview = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
-            if (!file) return preview.style.display = 'none';
-
-            if (file.size > 2 * 1024 * 1024) { alert('Dosya boyutu 2MB\'dan büyük olamaz!'); input.value = ''; return preview.style.display = 'none'; }
-            if (!file.type.startsWith('image/')) { alert('Lütfen geçerli bir resim dosyası seçin!'); input.value = ''; return preview.style.display = 'none'; }
-
-            const reader = new FileReader();
-            reader.onload = e => { previewImg.src = e.target.result; preview.style.display = 'block'; };
-            reader.readAsDataURL(file);
-        }
-
-        // Fotoğraf önizleme (düzenleme)
-        function previewEditCategoryImage(input) {
-            const file = input.files[0];
-            const previewImg = document.getElementById('editCategoryPreviewImg');
-            if (!file) return previewImg.style.display = 'none';
-
-            if (file.size > 2 * 1024 * 1024) { alert('Dosya boyutu 2MB\'dan büyük olamaz!'); input.value = ''; return previewImg.style.display = 'none'; }
-            if (!file.type.startsWith('image/')) { alert('Lütfen geçerli bir resim dosyası seçin!'); input.value = ''; return previewImg.style.display = 'none'; }
-
-            const reader = new FileReader();
-            reader.onload = e => { previewImg.src = e.target.result; previewImg.style.display = 'block'; };
-            reader.readAsDataURL(file);
-        }
 
         // Form validation + event binding
         document.addEventListener('DOMContentLoaded', function () {
             const addForm = document.getElementById('categoryAddForm');
-            const imageInput = document.getElementById('category_image');
-            const editImageInput = document.getElementById('edit_category_image');
-
-            if (imageInput) imageInput.addEventListener('change', () => previewCategoryImage(imageInput));
-            if (editImageInput) editImageInput.addEventListener('change', () => previewEditCategoryImage(editImageInput));
 
             if (addForm) {
                 addForm.addEventListener('submit', function (e) {

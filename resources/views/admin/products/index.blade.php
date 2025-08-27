@@ -121,14 +121,6 @@
                         <textarea name="description" class="form-control" rows="3" placeholder="Ürün açıklaması (isteğe bağlı)"></textarea>
                     </div>
                     
-                    <div class="col-md-6">
-                        <label class="form-label">Ürün Fotoğrafı</label>
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                        <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
-                        <div class="mt-2" id="imagePreview" style="display: none;">
-                            <img id="previewImg" src="" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
-                        </div>
-                    </div>
                     
                     <div class="col-md-6">
                         <label class="form-label">Durum</label>
@@ -208,23 +200,11 @@
                         <tr>
                             <td class="fw-bold text-muted">{{ $p->id }}</td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    @if($p->image)
-                                        <img src="{{ asset('storage/' . $p->image) }}" 
-                                             class="rounded me-2" width="32" height="32" 
-                                             style="object-fit: cover;">
-                                    @else
-                                        <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" 
-                                             style="width: 32px; height: 32px;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
+                                <div>
+                                    <h6 class="mb-0">{{ $p->name }}</h6>
+                                    @if($p->description)
+                                        <small class="text-muted d-none d-md-block">{{ Str::limit($p->description, 30) }}</small>
                                     @endif
-                                    <div>
-                                        <h6 class="mb-0">{{ $p->name }}</h6>
-                                        @if($p->description)
-                                            <small class="text-muted d-none d-md-block">{{ Str::limit($p->description, 30) }}</small>
-                                        @endif
-                                    </div>
                                 </div>
                             </td>
                             <td class="d-none d-md-table-cell">
@@ -417,14 +397,6 @@
                             <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
                         </div>
                         
-                        <div class="col-md-6">
-                            <label class="form-label">Ürün Fotoğrafı</label>
-                            <input type="file" name="image" id="edit_image" class="form-control" accept="image/*">
-                            <div class="form-text">JPG, PNG, GIF formatları desteklenir (Max: 2MB)</div>
-                            <div class="mt-2" id="editImagePreview">
-                                <img id="editPreviewImg" src="" class="img-thumbnail" style="max-width: 150px; max-height: 150px; display: none;">
-                            </div>
-                        </div>
                         
                         <div class="col-md-6">
                             <label class="form-label">Durum</label>
@@ -463,9 +435,6 @@ function resetForm() {
     document.querySelector('input[name="min_stock_level"]').value = '10';
     document.querySelector('input[name="max_stock_level"]').value = '1000';
     document.querySelector('input[name="is_active"]').checked = true;
-    // Fotoğraf önizlemesini temizle
-    document.getElementById('imagePreview').style.display = 'none';
-    document.getElementById('previewImg').src = '';
 }
 
 // Modal kapatma fonksiyonu
@@ -541,20 +510,6 @@ function editProduct(productId) {
             if (descriptionInput) descriptionInput.value = product.description || '';
             if (activeInput) activeInput.checked = product.is_active == 1;
             
-            // Mevcut fotoğrafı göster
-            const editPreviewImg = document.getElementById('editPreviewImg');
-            if (editPreviewImg) {
-                if (product.image) {
-                    editPreviewImg.src = `/storage/${product.image}`;
-                    editPreviewImg.style.display = 'block';
-                } else {
-                    editPreviewImg.style.display = 'none';
-                }
-            }
-            
-            // File input'u temizle
-            const imageInput = document.getElementById('edit_image');
-            if (imageInput) imageInput.value = '';
             
             // Form action'ını güncelle
             const form = document.getElementById('editProductForm');
@@ -595,107 +550,18 @@ function deleteProduct(productId) {
     }
 }
 
-// Fotoğraf önizleme
-function previewImage(input) {
-    const file = input.files[0];
-    const preview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-    
-    if (file) {
-        // Dosya boyutu kontrolü (2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            alert('Dosya boyutu 2MB\'dan büyük olamaz!');
-            input.value = '';
-            preview.style.display = 'none';
-            return;
-        }
-        
-        // Dosya türü kontrolü
-        if (!file.type.startsWith('image/')) {
-            alert('Lütfen geçerli bir resim dosyası seçin!');
-            input.value = '';
-            preview.style.display = 'none';
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.style.display = 'none';
-    }
-}
-
-// Düzenleme modal'ında fotoğraf önizleme
-function previewEditImage(input) {
-    const file = input.files[0];
-    const previewImg = document.getElementById('editPreviewImg');
-    
-    if (file) {
-        // Dosya boyutu kontrolü (2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            alert('Dosya boyutu 2MB\'dan büyük olamaz!');
-            input.value = '';
-            previewImg.style.display = 'none';
-            return;
-        }
-        
-        // Dosya türü kontrolü
-        if (!file.type.startsWith('image/')) {
-            alert('Lütfen geçerli bir resim dosyası seçin!');
-            input.value = '';
-            previewImg.style.display = 'none';
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            previewImg.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        // Dosya seçilmediğinde önizlemeyi gizle
-        previewImg.style.display = 'none';
-    }
-}
 
 // Form validation
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded');
     
     const form = document.querySelector('#productForm form');
-    const imageInput = document.querySelector('input[name="image"]');
-    const editImageInput = document.getElementById('edit_image');
     const editForm = document.getElementById('editProductForm');
     
     console.log('Form elements found:', {
         form: !!form,
-        imageInput: !!imageInput,
-        editImageInput: !!editImageInput,
         editForm: !!editForm
     });
-    
-    // Ekleme formunda fotoğraf seçildiğinde önizleme göster
-    if (imageInput) {
-        imageInput.addEventListener('change', function() {
-            console.log('Add image input changed');
-            previewImage(this);
-        });
-    }
-    
-    // Düzenleme formunda fotoğraf seçildiğinde önizleme göster
-    if (editImageInput) {
-        editImageInput.addEventListener('change', function() {
-            console.log('Edit image input changed');
-            previewEditImage(this);
-        });
-    } else {
-        console.log('Edit image input not found!');
-    }
     
     if (form) {
         form.addEventListener('submit', function(e) {

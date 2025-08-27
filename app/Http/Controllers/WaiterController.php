@@ -9,26 +9,76 @@ use App\Models\Order;
 use App\Models\WaiterCall;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Services\StockService;
 
 class WaiterController extends Controller
 {
     protected $stockService;
-
+    
+    // Cache süreleri (dakika)
+    protected const CACHE_SHORT = 2;    // 2 dakika - sık değişen veriler
+    protected const CACHE_MEDIUM = 10;  // 10 dakika - orta sıklıkta değişen veriler
+    
     public function __construct(StockService $stockService)
     {
         $this->stockService = $stockService;
     }
-    // Garson ana sayfa: masa listesi
-    public function index()
+    
+    /**
+     * Cache'li sorgu çalıştırma
+     */
+    protected function cacheQuery(string $key, callable $callback, int $minutes = self::CACHE_SHORT)
     {
-        $tables = Table::with('active_order')->get();
+        return Cache::remember($key, now()->addMinutes($minutes), $callback);
+    }
+    // Garson ana sayfa: masa listesi
+    public function index(Request $request)
+    {
+        // Filtreleme parametreleri
+        $query = request('q');
+        $statusFilter = request('status');
         
-        // Aktif garson çağrıları
-        $activeCalls = WaiterCall::with('table')
-            ->where('status', 'new')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Cache anahtarı oluştur (filtreler dahil)
+        $cacheKey = 'waiter_dashboard_' . md5($query . '_' . $statusFilter);
+        
+        $data = $this->cacheQuery($cacheKey, function() use ($query, $statusFilter) {
+            // Optimize edilmiş masa sorgusu
+            $tablesQuery = Table::query()
+                ->select(['id', 'name', 'status', 'capacity'])
+                ->with(['active_order' => function($q) {
+                    $q->select(['id', 'table_id', 'status', 'total_amount', 'created_at'])
+                      ->whereNotIn('status', ['paid', 'canceled']);
+                }]);
+                
+            // Arama filtresi
+            if ($query) {
+                $tablesQuery->where('name', 'like', '%' . $query . '%');
+            }
+            
+            // Durum filtresi (aktif siparişe göre)
+            if ($statusFilter) {
+                $tablesQuery->whereHas('active_order', function($q) use ($statusFilter) {
+                    $q->where('status', $statusFilter);
+                });
+            }
+            
+            $tables = $tablesQuery->get();
+            
+            // Aktif garson çağrıları - optimize edilmiş
+            $activeCalls = WaiterCall::query()
+                ->select(['id', 'table_id', 'status', 'created_at'])
+                ->with(['table:id,name'])
+                ->where('status', 'new')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+                
+            return compact('tables', 'activeCalls');
+        }, self::CACHE_SHORT);
+        
+        $tables = $data['tables'];
+        $activeCalls = $data['activeCalls'];
             
         return view('waiter.dashboard', compact('tables', 'activeCalls'));
     }
@@ -37,24 +87,47 @@ class WaiterController extends Controller
     // Masa detay sayfası
     public function showTable($id)
     {
-        $table = Table::findOrFail($id);
+        $cacheKey = "waiter_table_{$id}";
         
-        // Mevcut sipariş (ödenmemiş)
-        $currentOrder = Order::query()
-            ->where('table_id', $table->id)
-            ->whereNotIn('status', ['paid', 'canceled'])
-            ->latest('id')
-            ->with(['items.product', 'table'])
-            ->first();
+        $data = $this->cacheQuery($cacheKey, function() use ($id) {
+            $table = Table::select(['id', 'name', 'status', 'capacity'])
+                ->findOrFail($id);
+            
+            // Mevcut sipariş (ödenmemiş) - optimize edilmiş eager loading
+            $currentOrder = Order::query()
+                ->select(['id', 'table_id', 'status', 'total_amount', 'created_at', 'updated_at'])
+                ->where('table_id', $table->id)
+                ->whereNotIn('status', ['paid', 'canceled'])
+                ->latest('id')
+                ->with([
+                    'items' => function($q) {
+                        $q->select(['id', 'order_id', 'product_id', 'quantity', 'price', 'line_total']);
+                    },
+                    'items.product:id,name,price'
+                ])
+                ->first();
 
-        // Geçmiş siparişler (ödenmiş)
-        $pastOrders = Order::query()
-            ->where('table_id', $table->id)
-            ->where('status', 'paid')
-            ->with(['items.product'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+            // Geçmiş siparişler (ödenmiş) - optimize edilmiş
+            $pastOrders = Order::query()
+                ->select(['id', 'table_id', 'status', 'total_amount', 'created_at'])
+                ->where('table_id', $table->id)
+                ->where('status', 'paid')
+                ->with([
+                    'items' => function($q) {
+                        $q->select(['id', 'order_id', 'product_id', 'quantity', 'price', 'line_total']);
+                    },
+                    'items.product:id,name'
+                ])
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+                
+            return compact('table', 'currentOrder', 'pastOrders');
+        }, self::CACHE_SHORT);
+        
+        $table = $data['table'];
+        $currentOrder = $data['currentOrder'];
+        $pastOrders = $data['pastOrders'];
 
         return view('waiter.table', [
             'table' => $table,
@@ -112,6 +185,9 @@ class WaiterController extends Controller
                 'to_status' => $to,
                 'changed_by' => $user?->id,
             ]);
+            
+            // Cache temizleme
+            $this->clearOrderCache($order->table_id);
         });
 
         return response()->json([
@@ -123,13 +199,38 @@ class WaiterController extends Controller
             'new_status' => $to,
         ]);
     }
+    
+    /**
+     * Cache temizleme metodları
+     */
+    protected function clearOrderCache(int $tableId): void
+    {
+        Cache::forget("waiter_table_{$tableId}");
+        Cache::forget('waiter_dashboard_' . md5('_'));
+        
+        // Tüm dashboard cache'lerini temizle
+        $keys = ['waiter_dashboard_*', 'waiter_calls_*'];
+        foreach ($keys as $pattern) {
+            $cacheKeys = Cache::getRedis()->keys($pattern);
+            if (!empty($cacheKeys)) {
+                Cache::getRedis()->del($cacheKeys);
+            }
+        }
+    }
 
     // Garson çağrıları listesi
     public function calls()
     {
-        $calls = WaiterCall::with('table')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $page = request('page', 1);
+        $cacheKey = "waiter_calls_page_{$page}";
+        
+        $calls = $this->cacheQuery($cacheKey, function() {
+            return WaiterCall::query()
+                ->select(['id', 'table_id', 'status', 'message', 'created_at', 'responded_at', 'completed_at', 'responded_by'])
+                ->with(['table:id,name'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+        }, self::CACHE_SHORT);
             
         return view('waiter.calls', compact('calls'));
     }
