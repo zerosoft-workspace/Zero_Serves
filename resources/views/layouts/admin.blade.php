@@ -40,7 +40,7 @@
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            
+
             <div class="sidebar-content">
                 {{-- Main Navigation --}}
                 <ul class="sidebar-menu">
@@ -78,12 +78,28 @@
                             @endif
                         </a>
                     </li>
+                    @php
+                        // İlk yükleme anında okunmamış sayıyı server-side hesapla
+                        // (read_at alanı yoksa bu kısım 0 döner)
+                        $unreadReservations = \App\Models\Reservation::whereNull('read_at')->count();
+                    @endphp
+
                     <li>
-                        <a href="#" class="{{ request()->routeIs('admin.customers*') ? 'active' : '' }}">
-                            <i class="bi bi-people"></i>
-                            <span>Müşteriler</span>
+                        <a href="{{ route('admin.reservations.index') }}"
+                            class="{{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
+                            <i class="bi bi-calendar2-check"></i>
+                            <span>Rezervasyonlar</span>
+
+                            {{-- Bildirim Rozeti --}}
+                            <span id="reservationBadge"
+                                class="badge {{ $unreadReservations ? 'bg-danger' : 'bg-secondary' }} ms-1"
+                                style="display: {{ $unreadReservations ? 'inline-block' : 'none' }};">
+                                {{ $unreadReservations }}
+                            </span>
                         </a>
                     </li>
+
+
                 </ul>
 
                 {{-- Menu Management --}}
@@ -188,7 +204,7 @@
 
     {{-- Mobile Menu JavaScript --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const adminSidebar = document.getElementById('adminSidebar');
             const mobileOverlay = document.getElementById('mobileOverlay');
@@ -196,7 +212,7 @@
 
             // Mobile menu toggle
             if (mobileMenuToggle) {
-                mobileMenuToggle.addEventListener('click', function() {
+                mobileMenuToggle.addEventListener('click', function () {
                     adminSidebar.classList.toggle('show');
                     mobileOverlay.classList.toggle('show');
                     document.body.style.overflow = adminSidebar.classList.contains('show') ? 'hidden' : '';
@@ -205,7 +221,7 @@
 
             // Sidebar close button
             if (sidebarClose) {
-                sidebarClose.addEventListener('click', function() {
+                sidebarClose.addEventListener('click', function () {
                     adminSidebar.classList.remove('show');
                     mobileOverlay.classList.remove('show');
                     document.body.style.overflow = '';
@@ -214,7 +230,7 @@
 
             // Overlay click to close
             if (mobileOverlay) {
-                mobileOverlay.addEventListener('click', function() {
+                mobileOverlay.addEventListener('click', function () {
                     adminSidebar.classList.remove('show');
                     mobileOverlay.classList.remove('show');
                     document.body.style.overflow = '';
@@ -224,7 +240,7 @@
             // Close sidebar when clicking on menu items (mobile)
             const sidebarLinks = adminSidebar.querySelectorAll('.sidebar-menu a');
             sidebarLinks.forEach(link => {
-                link.addEventListener('click', function() {
+                link.addEventListener('click', function () {
                     if (window.innerWidth <= 768) {
                         adminSidebar.classList.remove('show');
                         mobileOverlay.classList.remove('show');
@@ -234,7 +250,7 @@
             });
 
             // Handle window resize
-            window.addEventListener('resize', function() {
+            window.addEventListener('resize', function () {
                 if (window.innerWidth > 768) {
                     adminSidebar.classList.remove('show');
                     mobileOverlay.classList.remove('show');
@@ -243,7 +259,7 @@
             });
 
             // Escape key to close sidebar
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && adminSidebar.classList.contains('show')) {
                     adminSidebar.classList.remove('show');
                     mobileOverlay.classList.remove('show');
@@ -251,6 +267,48 @@
                 }
             });
         });
+    </script>
+    <script>
+        (function () {
+            const badge = document.getElementById('reservationBadge');
+            if (!badge) return;
+
+            let lastCount = parseInt(badge.innerText || '0', 10);
+
+            async function fetchUnread() {
+                try {
+                    const res = await fetch("{{ route('admin.reservations.unread_count') }}", {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        cache: 'no-store'
+                    });
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    const count = parseInt(data.count ?? 0, 10);
+
+                    // Rozeti güncelle
+                    badge.innerText = count;
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                    badge.classList.toggle('bg-danger', count > 0);
+                    badge.classList.toggle('bg-secondary', count === 0);
+
+                    // Artış varsa minik pulse animasyonu
+                    if (count > lastCount) {
+                        badge.animate(
+                            [{ transform: 'scale(1)' }, { transform: 'scale(1.2)' }, { transform: 'scale(1)' }],
+                            { duration: 400, easing: 'ease-in-out' }
+                        );
+                    }
+                    lastCount = count;
+                } catch (e) {
+                    // sessiz geç
+                }
+            }
+
+            // İlk çağrı + 25 sn aralık
+            fetchUnread();
+            setInterval(fetchUnread, 25000);
+        })();
     </script>
 
     @stack('scripts')

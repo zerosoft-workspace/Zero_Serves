@@ -37,11 +37,13 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="{{ request()->routeIs('admin.customers*') ? 'active' : '' }}">
-                    <i class="bi bi-people"></i>
-                    <span>Müşteriler</span>
+                <a href="{{ route('admin.reservations.index') }}"
+                    class="{{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
+                    <i class="bi bi-calendar2-check"></i>
+                    <span>Rezervasyonlar</span>
                 </a>
             </li>
+
         </ul>
 
         {{-- Menu Management --}}

@@ -18,6 +18,8 @@ use App\Http\Controllers\OrderManagementController;
 use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+
 /*
 |--------------------------------------------------------------------------
 | Admin
@@ -123,6 +125,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'multi.auth:ad
         Route::delete('/{order}', 'destroy')->name('destroy');
         Route::get('/{order}/print', 'print')->name('print');
     });
+
+    Route::prefix('reservations')->name('reservations.')->controller(AdminReservationController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{reservation}', 'show')->whereNumber('reservation')->name('show');
+        Route::delete('/{reservation}', 'destroy')->whereNumber('reservation')->name('destroy');
+        Route::get('/_unread-count', 'unreadCount')->name('unread_count');
+
+
+    });
+
 });
 
 /*
