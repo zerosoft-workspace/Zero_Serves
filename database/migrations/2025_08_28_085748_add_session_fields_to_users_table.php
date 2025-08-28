@@ -12,10 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('last_activity')->nullable()->after('remember_token');
-            $table->boolean('is_online')->default(false)->after('last_activity');
-            $table->index('last_activity');
-            $table->index('is_online');
+            //
         });
     }
 
@@ -25,9 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['last_activity']);
-            $table->dropIndex(['is_online']);
-            $table->dropColumn(['last_activity', 'is_online']);
+            //
         });
     }
 };

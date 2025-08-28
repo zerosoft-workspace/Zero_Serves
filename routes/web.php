@@ -17,13 +17,27 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\OrderManagementController;
 use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SessionController;
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
-// CSRF token yenileme endpoint'i
-Route::get('/csrf-token', [App\Http\Controllers\CSRFController::class, 'refreshToken'])->name('csrf.refresh');
+/*
+|--------------------------------------------------------------------------
+| Session Management & API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/csrf-token', [SessionController::class, 'getCsrfToken'])->name('csrf.token');
+    Route::get('/session/status', [SessionController::class, 'checkStatus'])->name('session.status');
+    Route::post('/session/heartbeat', [SessionController::class, 'heartbeat'])->name('session.heartbeat');
+    Route::post('/session/browser-close', [SessionController::class, 'browserClose'])->name('session.browser-close');
+});
+
+// Session expired page
+Route::get('/session-expired', [SessionController::class, 'expired'])->name('session.expired');
+Route::post('/logout', [SessionController::class, 'logout'])->name('logout');
 
 // Admin login routes (accessible to guests)
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -43,7 +57,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 // Admin authenticated routes
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'multi.auth:admin,admin'])->group(function () {
     /** Girişli admin */
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');                  // admin.dashboard
     Route::get('/dashboard/stats', [AdminController::class, 'dashboardStats'])->name('dashboard.stats'); // admin.dashboard.stats
@@ -155,10 +169,8 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
 
     // Giriş yapan garson
     Route::middleware([
-        'auth',
-        'waiter',
-        // varsa alias tanımlıysa kullan; yoksa bu satırı kaldır
-        'session.timeout',
+        'auth:waiter',
+        'multi.auth:waiter,waiter',
         'prevent.back.history',
     ])->group(function () {
         Route::post('/logout', [WaiterAuthController::class, 'logout'])->name('logout');

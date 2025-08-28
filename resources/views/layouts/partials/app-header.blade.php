@@ -66,12 +66,9 @@
                                 <hr class="dropdown-divider">
                             </li>
                             <li>
-                                <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right me-2"></i> Çıkış Yap
-                                    </button>
-                                </form>
+                                <a href="{{ route('admin.logout') }}" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Çıkış Yap
+                                </a>
                             </li>
                         @elseif($isWait)
                             <li>
@@ -104,12 +101,9 @@
                                 <hr class="dropdown-divider">
                             </li>
                             <li>
-                                <form method="POST" action="{{ route('waiter.logout') }}" class="m-0">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right me-2"></i> Çıkış Yap
-                                    </button>
-                                </form>
+                                <a href="{{ route('waiter.logout') }}" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Çıkış Yap
+                                </a>
                             </li>
                         @endif
                     </ul>

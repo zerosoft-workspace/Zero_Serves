@@ -1,0 +1,83 @@
+/* Custom Pagination Styles - Force Override */
+.pagination-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.pagination-wrapper .pagination {
+    margin: 0 !important;
+    font-size: 0.7rem !important;
+}
+
+.pagination-wrapper .page-link {
+    padding: 0.2rem 0.4rem !important;
+    margin: 0 0.05rem !important;
+    border-radius: 0.2rem !important;
+    border: 1px solid #dee2e6 !important;
+    color: #6c757d !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease-in-out !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.65rem !important;
+}
+
+.pagination-wrapper .page-link:hover {
+    background-color: #e9ecef !important;
+    border-color: #adb5bd !important;
+    color: #495057 !important;
+}
+
+.pagination-wrapper .page-item.active .page-link {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+}
+
+.pagination-wrapper .page-item.disabled .page-link {
+    color: #adb5bd !important;
+    background-color: #fff !important;
+    border-color: #dee2e6 !important;
+    cursor: not-allowed !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+}
+
+/* Compact pagination for mobile */
+@media (max-width: 576px) {
+    .pagination-wrapper .pagination {
+        font-size: 0.6rem !important;
+    }
+    
+    .pagination-wrapper .page-link {
+        padding: 0.15rem 0.3rem !important;
+        margin: 0 0.03rem !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+        height: 20px !important;
+        font-size: 0.6rem !important;
+    }
+    
+    /* Hide page numbers on very small screens, keep only prev/next */
+    .pagination-wrapper .page-item:not(.disabled):not(.active) .page-link {
+        display: none !important;
+    }
+    
+    .pagination-wrapper .page-item.active .page-link,
+    .pagination-wrapper .page-item:first-child .page-link,
+    .pagination-wrapper .page-item:last-child .page-link {
+        display: flex !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+        height: 20px !important;
+    }
+}

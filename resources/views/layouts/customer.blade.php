@@ -19,6 +19,11 @@
     <!-- Customer CSS -->
     <link rel="stylesheet" href="{{ asset('css/customer.css') }}">
 
+    {{-- CSRF Handler --}}
+    <script src="{{ asset('js/csrf-handler.js') }}" defer></script>
+    {{-- Session Manager --}}
+    <script src="{{ asset('js/session-manager.js') }}" defer></script>
+
     @stack('styles')
 </head>
 

@@ -25,8 +25,8 @@
             {{-- Sol / hero --}}
             <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center p-5 hero-pane">
                 <div class="text-center">
-                    <h1 class="display-6 fw-bold mb-3">Admin Paneli</h1>
-                    <p class="muted">Kategorileri, ürünleri, masaları ve kullanıcıları yönetin.</p>
+                    <h1 class="display-6 fw-bold mb-3">Hoşgeldiniz</h1>
+                    <p class="muted">Sipariş vermek için giriş yapınız.</p>
                 </div>
             </div>
 
@@ -34,7 +34,7 @@
             <div class="col-lg-6 bg-white p-4 p-md-5">
                 <h4 class="mb-3">
                     <i class="bi bi-star-fill text-primary me-2"></i>
-                    Admin Girişi
+                    Müşteri Girişi
                 </h4>
 
                 {{-- Hata mesajları --}}
@@ -77,11 +77,7 @@
                         @enderror
                     </div>
 
-                    {{-- Beni hatırla --}}
-                    <div class="form-check my-3">
-                        <input class="form-check-input" type="checkbox" id="remember" name="remember" value="1">
-                        <label class="form-check-label" for="remember">Beni hatırla</label>
-                    </div>
+
 
                     {{-- Gönder --}}
                     <div class="d-grid">

@@ -20,6 +20,11 @@
     {{-- Garson paneli özel CSS --}}
     <link rel="stylesheet" href="{{ asset('css/waiter.css') }}">
 
+    {{-- CSRF Handler --}}
+    <script src="{{ asset('js/csrf-handler.js') }}" defer></script>
+    {{-- Session Manager --}}
+    <script src="{{ asset('js/session-manager.js') }}" defer></script>
+
     {{-- Sayfaya özel ek stiller için --}}
     @stack('styles')
 </head>

@@ -11,12 +11,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    {{-- Ortak header ve admin yerleşim CSS --}}
+    {{-- Ortak header ve admin stilleri --}}
     <link rel="stylesheet" href="{{ asset('css/app-header.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pagination-custom.css') }}">
 
     {{-- CSRF Handler --}}
     <script src="{{ asset('js/csrf-handler.js') }}" defer></script>
+    {{-- Session Manager --}}
+    <script src="{{ asset('js/session-manager.js') }}" defer></script>
 
     @stack('styles')
 </head>

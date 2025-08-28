@@ -15,9 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'waiter' => \App\Http\Middleware\EnsureWaiter::class,
             'prevent.back.history' => \App\Http\Middleware\PreventBackHistory::class,
-            'session.timeout' => \App\Http\Middleware\HandleSessionTimeout::class, // <-- alias
-    
+            'session.timeout' => \App\Http\Middleware\HandleSessionTimeout::class,
+            'session.activity' => \App\Http\Middleware\SessionActivityTracker::class,
+            'multi.auth' => \App\Http\Middleware\MultiSessionAuth::class,
+        ]);
 
+        // Global middleware
+        $middleware->web(append: [
+            \App\Http\Middleware\SessionActivityTracker::class,
         ]);
 
     })

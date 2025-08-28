@@ -299,8 +299,10 @@
         </div>
     </div>
     @if(method_exists($products, 'hasPages') && $products->hasPages())
-        <div class="card-footer">
-            {{ $products->links() }}
+        <div class="card-footer d-flex justify-content-center">
+            <div class="pagination-wrapper">
+                {{ $products->links('pagination::bootstrap-4') }}
+            </div>
         </div>
     @endif
 </div>

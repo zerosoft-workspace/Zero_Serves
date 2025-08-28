@@ -14,7 +14,7 @@ class AdminAuthController extends Controller
     /** Login formu */
     public function showLoginForm()
     {
-        if (Auth::check() && Auth::user()->role === 'admin') {
+        if (Auth::guard('admin')->check()) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -41,7 +41,7 @@ class AdminAuthController extends Controller
         }
 
         // Sadece admin rolüne izin ver
-        $attempt = Auth::attempt(
+        $attempt = Auth::guard('admin')->attempt(
             array_merge($credentials, ['role' => 'admin']),
             $request->boolean('remember')
         );
@@ -73,15 +73,18 @@ class AdminAuthController extends Controller
     public function logout(Request $request)
     {
         Log::info('Logout attempt', [
-            'email' => Auth::check() ? Auth::user()->email : 'guest',
+            'email' => Auth::guard('admin')->check() ? Auth::guard('admin')->user()->email : 'guest',
             'ip' => $request->ip(),
             'method' => $request->method(),
         ]);
 
         // GET isteği için CSRF kontrolü yapmayalım
         if ($request->isMethod('GET')) {
-            Auth::logout();
-            $request->session()->invalidate();
+            Auth::guard('admin')->logout();
+            
+            // Çoklu oturum sistemi için sadece admin guard'ını temizle
+            // Session'ı tamamen invalidate etme - diğer guard'lar etkilenmesin
+            $request->session()->forget('login_admin_59ba36addc2b2f9401580f014c7f58ea4e30989d');
             $request->session()->regenerateToken();
             
             return redirect()
@@ -90,10 +93,10 @@ class AdminAuthController extends Controller
         }
 
         // POST isteği için normal CSRF koruması devam eder
-        Auth::logout();
+        Auth::guard('admin')->logout();
 
-        // Oturumu tamamen geçersiz kıl + yeni CSRF üret
-        $request->session()->invalidate();
+        // Çoklu oturum sistemi için sadece admin guard'ını temizle
+        $request->session()->forget('login_admin_59ba36addc2b2f9401580f014c7f58ea4e30989d');
         $request->session()->regenerateToken();
 
         if (config('app.debug')) {

@@ -96,6 +96,47 @@
 
     {{-- Vendor JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {{-- CSRF Token Auto-Refresh for Multi-Session --}}
+    <script>
+        // Çoklu oturum sisteminde CSRF token'ı otomatik yenile
+        function refreshCSRFToken() {
+            fetch('/api/csrf-token')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token) {
+                        // Meta tag güncelle
+                        document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.token);
+                        // Form'daki hidden input güncelle
+                        const csrfInput = document.querySelector('input[name="_token"]');
+                        if (csrfInput) {
+                            csrfInput.value = data.token;
+                        }
+                    }
+                })
+                .catch(error => console.log('CSRF token refresh failed:', error));
+        }
+        
+        // Sayfa yüklendiğinde ve her 5 saniyede bir token yenile
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshCSRFToken();
+            setInterval(refreshCSRFToken, 5000);
+        });
+        
+        // Sayfa focus olduğunda token yenile (çoklu sekme desteği)
+        window.addEventListener('focus', function() {
+            refreshCSRFToken();
+        });
+        
+        // Form submit öncesi son kez token yenile
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            refreshCSRFToken();
+            setTimeout(() => {
+                e.target.submit();
+            }, 100);
+        });
+    </script>
 </body>
 
 </html>

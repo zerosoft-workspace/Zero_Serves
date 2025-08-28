@@ -14,7 +14,7 @@ class WaiterAuthController extends Controller
     /** Giriş formu */
     public function showLoginForm()
     {
-        if (Auth::check() && Auth::user()->role === 'waiter') {
+        if (Auth::guard('waiter')->check()) {
             return redirect()->route('waiter.dashboard');
         }
 
@@ -43,7 +43,7 @@ class WaiterAuthController extends Controller
         $remember = $request->boolean('remember');
 
         // Doğrudan role=waiter ile attempt (daha net ve hızlı)
-        $attempt = Auth::attempt(
+        $attempt = Auth::guard('waiter')->attempt(
             array_merge($credentials, ['role' => 'waiter']),
             $remember
         );
@@ -75,15 +75,18 @@ class WaiterAuthController extends Controller
     public function logout(Request $request)
     {
         Log::info('Waiter logout attempt', [
-            'email' => Auth::check() ? Auth::user()->email : 'guest',
+            'email' => Auth::guard('waiter')->check() ? Auth::guard('waiter')->user()->email : 'guest',
             'ip' => $request->ip(),
             'method' => $request->method(),
         ]);
 
         // GET isteği için CSRF kontrolü yapmayalım
         if ($request->isMethod('GET')) {
-            Auth::logout();
-            $request->session()->invalidate();
+            Auth::guard('waiter')->logout();
+            
+            // Çoklu oturum sistemi için sadece waiter guard'ını temizle
+            // Session'ı tamamen invalidate etme - diğer guard'lar etkilenmesin
+            $request->session()->forget('login_waiter_59ba36addc2b2f9401580f014c7f58ea4e30989d');
             $request->session()->regenerateToken();
             
             return redirect()
@@ -92,10 +95,10 @@ class WaiterAuthController extends Controller
         }
 
         // POST isteği için normal CSRF koruması devam eder
-        Auth::logout();
+        Auth::guard('waiter')->logout();
 
-        // Oturumu tamamen geçersiz kıl + yeni CSRF üret
-        $request->session()->invalidate();
+        // Çoklu oturum sistemi için sadece waiter guard'ını temizle
+        $request->session()->forget('login_waiter_59ba36addc2b2f9401580f014c7f58ea4e30989d');
         $request->session()->regenerateToken();
 
         if (config('app.debug')) {
