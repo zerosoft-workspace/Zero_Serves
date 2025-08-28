@@ -244,7 +244,7 @@
                     btnPreparing.disabled = false;
                     btnPreparing.style.pointerEvents = 'auto';
                     btnPreparing.classList.add('btn-warning');
-                    btnPreparing.onclick = function() { changeStatus('{{ route("waiter.orders.status", $currentOrder->id) }}', 'preparing'); };
+                    btnPreparing.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'preparing'); };
                     
                     btnDelivered.classList.add('btn-outline-secondary');
                     btnPaid.classList.add('btn-outline-secondary');
@@ -257,7 +257,7 @@
                     btnDelivered.disabled = false;
                     btnDelivered.style.pointerEvents = 'auto';
                     btnDelivered.classList.add('btn-success');
-                    btnDelivered.onclick = function() { changeStatus('{{ route("waiter.orders.status", $currentOrder->id) }}', 'delivered'); };
+                    btnDelivered.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'delivered'); };
                     
                     btnPaid.classList.add('btn-outline-secondary');
                     break;
@@ -270,7 +270,7 @@
                     btnPaid.disabled = false;
                     btnPaid.style.pointerEvents = 'auto';
                     btnPaid.classList.add('btn-primary');
-                    btnPaid.onclick = function() { changeStatus('{{ route("waiter.orders.status", $currentOrder->id) }}', 'paid'); };
+                    btnPaid.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'paid'); };
                     break;
                     
                 case 'paid':
