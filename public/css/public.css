@@ -407,26 +407,40 @@ body {
     text-align: center;
     font-size: clamp(2rem, 5vw, 3rem);
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, #fff, #ee7f35);
+    background: linear-gradient(135deg, #fff, #ffffff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 700; /* ✅ Kalın yapıldı */
     letter-spacing: 2px;
-    margin-top: -60px; /* ✅ Yukarı çekmek için eksi değer */
+    margin-top: -10px; /* ✅ Yukarı çekmek için eksi değer */
 }
-
 .section-subtitle {
     text-align: center;
-    color: #ffffff; /* ✅ Beyaz yapıldı */
+    color: #ffffff;
     margin-bottom: 4rem;
-    font-size: 1.1rem;
-    max-width: 600px;
+    font-size: 1.2rem; /* biraz büyüt */
+    max-width: 650px; /* genişliği artır */
     margin-left: auto;
     margin-right: auto;
-    line-height: 1.6;
-    font-weight: 500; /* ✅ Daha belirgin olması için */
-    opacity: 1; /* ✅ Opak tamamen beyaz */
+    line-height: 1.8; /* satır aralığını aç */
+    font-weight: 600; /* daha kalın yap */
+    opacity: 0; /* animasyon için başlangıç */
+    animation: fadeInUp 1.2s ease forwards;
+    animation-delay: 0.3s; /* başlıktan sonra gelsin */
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); /* okunabilirlik için gölge */
+}
+
+/* Fade In + Yukarıdan kayma animasyonu */
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .features-grid {
@@ -567,7 +581,7 @@ body {
 }*/
 
 .reviews {
-    background-image: url("/images/reviews.webp"),
+    background-image: url("/images/reviews.png"),
         linear-gradient(
             135deg,
             rgba(10, 10, 10, 0.55) 0%,
@@ -749,7 +763,14 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    font-size: 1.2rem;
+    font-size: 1.4rem; /* biraz büyüt */
+    line-height: 1; /* ikonun dikeyde kaymamasını sağlar */
+}
+.social-icon i {
+    display: flex; /* ikonlar için de flex uygula */
+    align-items: center;
+    justify-content: center;
+    padding-top: 12px; /* ↓ aşağı kaydırma */
 }
 
 .social-icon:hover {
@@ -1277,4 +1298,143 @@ section.contact {
     .map-container {
         height: 260px;
     }
+}
+/* ==== Rezervasyon Formu ==== */
+.form-card {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border: 1px solid rgba(255, 107, 53, 0.15);
+    border-radius: 18px;
+    padding: 2.5rem;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+} /* Grid düzeni */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem 2rem;
+}
+.form-grid .span-2 {
+    grid-column: span 2;
+} /* Label */
+.sf-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.5px;
+} /* Inputlar */
+.sf-input,
+.sf-select {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.sf-input:focus,
+.sf-select:focus {
+    outline: none;
+    border-color: #ff6b35;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 12px rgba(255, 107, 53, 0.35);
+} /* Placeholder rengi */
+.sf-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+} /* Select */
+.sf-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+} /* Submit butonu */
+.cta-button {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: #fff;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.35s ease;
+    box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35);
+}
+.cta-button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 28px rgba(255, 107, 53, 0.5);
+    background: linear-gradient(135deg, #e55a2b, #ff6b35);
+} /* === Rezervasyon formu - mobil uyum === */
+.form-card {
+    max-width: 100%;
+} /* input/select genişlik ve iOS zoom fix */
+.sf-input,
+.sf-select,
+.form-card .flatpickr-input {
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px; /* iOS zoom'u engeller */
+} /* flatpickr altInput görünümü temayla uyumlu olsun */
+.form-card .flatpickr-input {
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+.form-card .flatpickr-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+} /* takvim popup her şeyin üstünde olsun */
+.flatpickr-calendar {
+    z-index: 9999 !important;
+} /* mobil düzen */
+@media (max-width: 768px) {
+    .hero {
+        padding-top: 96px !important;
+        background-attachment: scroll;
+    }
+    .hero-content {
+        max-width: 100% !important;
+        padding: 0 16px;
+    }
+    .form-card {
+        padding: 1rem !important;
+        border-radius: 14px;
+    } /* 2 sütundan 1 sütuna düşür */
+    .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.9rem !important;
+    }
+    .form-grid .span-2 {
+        grid-column: 1 / -1 !important;
+    }
+    .cta-button {
+        width: 100%;
+        padding: 0.95rem 1rem;
+        font-size: 1rem;
+    }
+} /* Mobilde hero sabit yükseklik ve overflow'u kaldır */
+@media (max-width: 768px) {
+    .hero {
+        height: auto !important; /* 100vh yerine içerik kadar */
+        min-height: 100vh; /* yine de en az ekran kadar olsun */
+        overflow: visible !important; /* form / takvim kesilmesin */
+        padding-top: 96px !important;
+        padding-bottom: 40px; /* altta nefes alanı */
+        background-attachment: scroll; /* iOS performans */
+    }
+    .hero-content {
+        max-width: 100% !important;
+        padding: 0 16px;
+    }
+}
+.flatpickr-calendar {
+    z-index: 9999 !important;
 }
