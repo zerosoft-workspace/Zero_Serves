@@ -93,20 +93,18 @@ class SessionController extends Controller
      */
     public function expired()
     {
-        // Eğer kullanıcı hala giriş yapmışsa dashboard'a yönlendir
-        if (Auth::check()) {
-            $user = Auth::user();
-            switch ($user->role) {
-                case 'admin':
-                    return redirect()->route('admin.dashboard');
-                case 'waiter':
-                    return redirect()->route('waiter.dashboard');
-                case 'customer':
-                    return redirect()->route('customer.dashboard');
-                default:
-                    return redirect()->route('landing');
+        // Tüm guard'lardan çıkış yap ve session'ı tamamen temizle
+        $guards = ['web', 'admin', 'waiter', 'customer'];
+        
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                Auth::guard($guard)->logout();
             }
         }
+        
+        // Session'ı tamamen temizle
+        session()->flush();
+        session()->regenerate();
 
         return view('auth.session-expired');
     }

@@ -76,7 +76,7 @@
         </p>
         
         <div class="countdown">
-            Ana sayfaya yönlendiriliyorsunuz... <span id="countdown">5</span>
+            Güvenliğiniz için oturumunuz sonlandırıldı.
         </div>
         
         <div class="mt-4">
@@ -89,29 +89,20 @@
         <div class="mt-4">
             <small class="text-muted">
                 <i class="bi bi-shield-check me-1"></i>
-                Güvenliğiniz için oturum süresi 30 dakika ile sınırlıdır
+                Güvenliğiniz için oturum süresi sınırlıdır
             </small>
         </div>
     </div>
 
     <script>
-        // 5 saniye sonra ana sayfaya yönlendir
-        let countdown = 5;
-        const countdownElement = document.getElementById('countdown');
-        
-        const timer = setInterval(() => {
-            countdown--;
-            countdownElement.textContent = countdown;
-            
-            if (countdown <= 0) {
-                clearInterval(timer);
-                window.location.href = '{{ route("landing") }}';
-            }
-        }, 1000);
-        
-        // Sayfa yüklendiğinde localStorage'ı temizle
+        // Sayfa yüklendiğinde localStorage ve sessionStorage'ı temizle
         localStorage.clear();
         sessionStorage.clear();
+        
+        // Tüm session cookie'lerini temizle
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
     </script>
 </body>
 </html>
