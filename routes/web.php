@@ -69,15 +69,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'multi.auth:ad
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');                      // admin.logout
     Route::get('/logout', [AdminAuthController::class, 'logout'])->name('logout.get');                   // admin.logout (GET fallback)
 
-    Route::prefix('tables')->name('tables.')->controller(AdminTableController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::post('/{table}/clear', 'clear')->whereNumber('table')->name('clear');
-        Route::delete('/{table}', 'destroy')->whereNumber('table')->name('destroy');
-        Route::post('/assign-waiter', 'assignWaiter')->name('assign.waiter');
-        Route::post('/bulk-assign', 'bulkAssign')->name('bulk.assign');
-        Route::get('/assignment-report', 'assignmentReport')->name('assignment.report');
-    });
+    Route::prefix('tables')
+        ->name('tables.')
+        ->controller(\App\Http\Controllers\Admin\TableController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::post('/{table}/clear', 'clear')->whereNumber('table')->name('clear');
+            Route::delete('/{table}', 'destroy')->whereNumber('table')->name('destroy');
+
+            Route::post('/assign-waiter', 'assignWaiter')->name('assign.waiter');
+            Route::post('/bulk-assign', 'bulkAssign')->name('bulk.assign');
+            Route::get('/assignment-report', 'assignmentReport')->name('assignment.report');
+
+            // PDF (toplu ve tek)
+            Route::post('/qr-pdf', 'qrPdfAll')->name('qr.pdf');
+            Route::get('/{table}/qr-pdf', 'qrPdfSingle')->whereNumber('table')->name('qr.single');
+        });
 
     Route::prefix('categories')->name('categories.')->controller(CategoryController::class)->group(function () {
         Route::get('/', 'index')->name('index');

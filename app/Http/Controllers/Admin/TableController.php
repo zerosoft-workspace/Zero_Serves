@@ -8,30 +8,87 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+// PDF & QR
+use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Helpers\NetworkHelper;
+
 class TableController extends Controller
 {
     /**
      * Masa yönetimi ana sayfası
+     * Not: blade 'active_order' ve 'waiter' kullanıyor → eager load edelim.
      */
     public function index()
     {
-        $tables = Table::with('waiter:id,name,email')->get();
+        $tables = Table::with(['waiter:id,name,email', 'active_order'])->get();
         $waiters = User::where('role', 'waiter')->select('id', 'name', 'email')->get();
-        
+
         return view('admin.tables.index', compact('tables', 'waiters'));
     }
 
     /**
-     * Masa-garson atama işlemi
+     * Yeni masa oluştur
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:50',
+        ]);
+
+        Table::create([
+            'name' => $request->name,
+            'token' => bin2hex(random_bytes(16)), // benzersiz token
+            'status' => 'empty',
+        ]);
+
+        return redirect()->back()->with('success', 'Masa oluşturuldu');
+    }
+
+    /**
+     * Masayı tamamen temizle (açık siparişleri sil + durumu boş yap)
+     */
+    public function clear(Table $table)
+    {
+        // Açık siparişleri sil
+        $table->orders()
+            ->whereIn('status', ['pending', 'preparing', 'delivered'])
+            ->delete();
+
+        // Masayı boş yap
+        $table->status = 'empty';
+        $table->save();
+
+        return back()->with('success', 'Masa başarıyla temizlendi.');
+    }
+
+    /**
+     * Masa sil
+     */
+    public function destroy(Table $table)
+    {
+        $hasOpen = $table->orders()
+            ->whereIn('status', ['pending', 'preparing', 'delivered'])
+            ->exists();
+
+        if ($hasOpen) {
+            return back()->with('error', 'Bu masada devam eden sipariş var. Önce siparişi kapatın (Ödendi).');
+        }
+
+        $table->delete();
+        return back()->with('success', 'Masa silindi.');
+    }
+
+    /**
+     * Masa-garson atama (tekil)
      */
     public function assignWaiter(Request $request)
     {
         $request->validate([
             'table_id' => 'required|exists:tables,id',
-            'waiter_id' => 'nullable|exists:users,id'
+            'waiter_id' => 'nullable|exists:users,id',
         ]);
 
-        // Garson rolü kontrolü
         if ($request->waiter_id) {
             $waiter = User::find($request->waiter_id);
             if ($waiter->role !== 'waiter') {
@@ -42,7 +99,7 @@ class TableController extends Controller
             }
         }
 
-        $table = Table::find($request->table_id);
+        $table = Table::findOrFail($request->table_id);
         $table->waiter_id = $request->waiter_id;
         $table->save();
 
@@ -51,7 +108,7 @@ class TableController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Masa {$table->name} başarıyla {$waiterName} garsonuna atandı.",
-            'waiter_name' => $waiterName
+            'waiter_name' => $waiterName,
         ]);
     }
 
@@ -63,17 +120,16 @@ class TableController extends Controller
         $request->validate([
             'assignments' => 'required|array',
             'assignments.*.table_id' => 'required|exists:tables,id',
-            'assignments.*.waiter_id' => 'nullable|exists:users,id'
+            'assignments.*.waiter_id' => 'nullable|exists:users,id',
         ]);
 
         DB::beginTransaction();
         try {
             foreach ($request->assignments as $assignment) {
-                // Garson rolü kontrolü
-                if ($assignment['waiter_id']) {
+                if (!empty($assignment['waiter_id'])) {
                     $waiter = User::find($assignment['waiter_id']);
-                    if ($waiter->role !== 'waiter') {
-                        throw new \Exception("Kullanıcı {$waiter->name} garson değil!");
+                    if (!$waiter || $waiter->role !== 'waiter') {
+                        throw new \Exception("Kullanıcı uygun değil (garson değil).");
                     }
                 }
 
@@ -84,14 +140,13 @@ class TableController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true,
-                'message' => 'Toplu atama başarıyla tamamlandı.'
+                'message' => 'Toplu atama başarıyla tamamlandı.',
             ]);
-
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Toplu atama sırasında hata: ' . $e->getMessage()
+                'message' => 'Toplu atama sırasında hata: ' . $e->getMessage(),
             ], 400);
         }
     }
@@ -112,13 +167,73 @@ class TableController extends Controller
             ->groupBy('users.id', 'users.name', 'users.email')
             ->get();
 
-        // Atanmamış masalar
         $unassignedTables = Table::whereNull('waiter_id')->pluck('name')->toArray();
 
         return response()->json([
             'assignments' => $report,
             'unassigned_tables' => $unassignedTables,
-            'unassigned_count' => count($unassignedTables)
+            'unassigned_count' => count($unassignedTables),
         ]);
     }
+
+    /**
+     * Tüm masaların QR'larını tek PDF
+     */
+    public function qrPdfAll()
+    {
+        $tables = Table::orderBy('name')->get();
+        $items = $this->buildQrItems($tables);
+
+        $pdf = Pdf::loadView('admin.tables.qr-pdf', [
+            'items' => $items,
+            'title' => 'Masalar QR',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('masalar-qr-' . now()->format('Ymd-His') . '.pdf');
+    }
+
+    /**
+     * Tek masanın QR'ı PDF
+     */
+    public function qrPdfSingle(Table $table)
+    {
+        $items = $this->buildQrItems(collect([$table]));
+
+        $pdf = Pdf::loadView('admin.tables.qr-pdf', [
+            'items' => $items,
+            'title' => 'Masa QR - ' . $table->name,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('masa-' . $table->id . '-qr-' . now()->format('Ymd-His') . '.pdf');
+    }
+
+    /**
+     * Yardımcı: URL + SVG hazırla (Imagick gerekmez)
+     */
+    /**
+     * URL + base64 SVG hazırla (Imagick gerekmez, DomPDF uyumlu)
+     */
+    protected function buildQrItems($tables)
+    {
+        return $tables->map(function ($table) {
+            $url = \App\Helpers\NetworkHelper::getTableQrUrl($table->token);
+
+            // SVG üret
+            $svg = \QrCode::format('svg')
+                ->size(600)   // yüksek çözünürlük; boyutu CSS'te kısacağız
+                ->margin(0)
+                ->generate($url);
+
+            // base64 olarak <img src="data:..."> içinde kullanacağız
+            $svgBase64 = 'data:image/svg+xml;base64,' . base64_encode($svg);
+
+            return [
+                'name' => $table->name,
+                'token' => $table->token,
+                'url' => $url,
+                'img' => $svgBase64,  // <-- dikkat: img anahtarı
+            ];
+        });
+    }
+
 }

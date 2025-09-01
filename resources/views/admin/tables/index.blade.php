@@ -5,13 +5,24 @@
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
             <h2 class="mb-0">Masalar</h2>
 
-            {{-- Masa ekleme --}}
-            <form action="{{ route('admin.tables.store') }}" method="POST" class="w-100 w-md-auto d-flex gap-2">
-                @csrf
-                <input type="text" name="name" class="form-control" placeholder="Masa Adı" required>
-                <button type="submit" class="btn btn-primary px-3">Masa Ekle</button>
-            </form>
+            <div class="d-flex gap-2 w-100 w-md-auto">
+                {{-- Masa ekleme --}}
+                <form action="{{ route('admin.tables.store') }}" method="POST" class="flex-grow-1 d-flex gap-2">
+                    @csrf
+                    <input type="text" name="name" class="form-control" placeholder="Masa Adı" required>
+                    <button type="submit" class="btn btn-primary px-3">Masa Ekle</button>
+                </form>
+
+                {{-- EKLENDİ: Tüm QR’ları PDF indir --}}
+                <form action="{{ route('admin.tables.qr.pdf') }}" method="POST" class="w-auto">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-secondary px-3">
+                        Tüm QR’ları PDF olarak indir
+                    </button>
+                </form>
+            </div>
         </div>
+
 
         {{-- Flash messages --}}
         @if(session('success'))
@@ -33,9 +44,9 @@
                                     $activeOrder = $table->active_order;
                                     $statusColor = 'success';
                                     $statusText = 'Boş';
-                                    
+
                                     if ($activeOrder) {
-                                        switch($activeOrder->status) {
+                                        switch ($activeOrder->status) {
                                             case 'pending':
                                                 $statusColor = 'warning';
                                                 $statusText = 'Sipariş Bekliyor';
@@ -54,7 +65,7 @@
                                         }
                                     } else {
                                         // Masa durumuna göre renk belirle
-                                        switch($table->status) {
+                                        switch ($table->status) {
                                             case 'order_pending':
                                                 $statusColor = 'warning';
                                                 $statusText = 'Sipariş Var';
@@ -88,8 +99,7 @@
                                 <select class="form-select form-select-sm waiter-select" data-table-id="{{ $table->id }}">
                                     <option value="">Garson Seçin</option>
                                     @foreach($waiters as $waiter)
-                                        <option value="{{ $waiter->id }}" 
-                                            {{ $table->waiter_id == $waiter->id ? 'selected' : '' }}>
+                                        <option value="{{ $waiter->id }}" {{ $table->waiter_id == $waiter->id ? 'selected' : '' }}>
                                             {{ $waiter->name }}
                                         </option>
                                     @endforeach
@@ -116,9 +126,16 @@
                             {{-- Aksiyonlar --}}
                             <div class="mt-auto">
                                 <div class="d-grid gap-2 d-md-flex">
+                                    {{-- EKLENDİ: Tek masa için QR PDF --}}
+                                    <a href="{{ route('admin.tables.qr.single', $table->id) }}"
+                                        class="btn btn-secondary w-100 w-md-auto">
+                                        İndir
+                                    </a>
+
                                     {{-- Kopyala --}}
                                     <button type="button" class="btn btn-info w-100 w-md-auto"
-                                        data-copy="{{ \App\Helpers\NetworkHelper::getTableQrUrl($table->token) }}">URL Kopyala</button>
+                                        data-copy="{{ \App\Helpers\NetworkHelper::getTableQrUrl($table->token) }}">URL
+                                        Kopyala</button>
 
                                     {{-- Temizle --}}
                                     <form action="{{ route('admin.tables.clear', $table->id) }}" method="POST"
@@ -136,6 +153,7 @@
                                     </form>
                                 </div>
                             </div>
+
 
                         </div>
                     </div>
@@ -192,11 +210,11 @@
         // Garson atama
         document.addEventListener('change', async (e) => {
             if (!e.target.classList.contains('waiter-select')) return;
-            
+
             const select = e.target;
             const tableId = select.dataset.tableId;
             const waiterId = select.value || null;
-            
+
             try {
                 const response = await fetch('/admin/tables/assign-waiter', {
                     method: 'POST',
@@ -209,20 +227,20 @@
                         waiter_id: waiterId
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // Başarı mesajı göster
                     const alert = document.createElement('div');
                     alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
                     alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                     alert.innerHTML = `
-                        ${data.message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
+                                    ${data.message}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                `;
                     document.body.appendChild(alert);
-                    
+
                     // 3 saniye sonra otomatik kapat
                     setTimeout(() => {
                         if (alert.parentNode) {
