@@ -7,6 +7,15 @@
     <title>Zerosoft - Restoran</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/public.css') }}">
+    <!-- HIZ: DNS/TLS sıcak olsun -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+
+    <!-- CSS'i preloada al, yüklendiğinde stylesheet yap -->
+    <link rel="preload" as="style" href="{{ asset('css/public.css') }}" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="{{ asset('css/public.css') }}">
+    </noscript>
+
 </head>
 
 <body class="loading">
@@ -196,6 +205,59 @@
         </div>
     </section>
 
+    <!-- Gallery Section -->
+    <section class="gallery" id="galeri">
+        <div class="container">
+            <h2 class="section-title">Mekânımızdan kareler ve lezzetlerimizden seçmeler</h2>
+
+            <div class="gallery-grid" id="galleryGrid">
+                <figure class="g-item" data-index="0">
+                    <img src="{{ asset('images/gallery/1.jpg') }}" alt="SoftFood - galeri 1" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Sunumdan bir kare</figcaption>
+                </figure>
+
+                <figure class="g-item" data-index="1">
+                    <img src="{{ asset('images/gallery/2.jpg') }}" alt="SoftFood - galeri 2" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Günün menüsü</figcaption>
+                </figure>
+
+                <figure class="g-item" data-index="2">
+                    <img src="{{ asset('images/gallery/3.jpg') }}" alt="SoftFood - galeri 3" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Şık ambiyans</figcaption>
+                </figure>
+
+                <figure class="g-item" data-index="3">
+                    <img src="{{ asset('images/gallery/4.jpg') }}" alt="SoftFood - galeri 4" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Taze kahve</figcaption>
+                </figure>
+
+                <figure class="g-item" data-index="4">
+                    <img src="{{ asset('images/gallery/5.jpg') }}" alt="SoftFood - galeri 5" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Tatlı köşesi</figcaption>
+                </figure>
+
+                <figure class="g-item" data-index="5">
+                    <img src="{{ asset('images/gallery/6.jpg') }}" alt="SoftFood - galeri 6" width="1200" height="800"
+                        loading="lazy" decoding="async" fetchpriority="low">
+                    <figcaption>Şefin önerisi</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- Lightbox -->
+        <div class="lightbox" id="lightbox" aria-hidden="true">
+            <button class="lb-btn lb-close" id="lbClose" aria-label="Kapat">&times;</button>
+            <button class="lb-btn lb-prev" id="lbPrev" aria-label="Önceki">&#10094;</button>
+            <img class="lb-img" id="lbImg" alt="">
+            <button class="lb-btn lb-next" id="lbNext" aria-label="Sonraki">&#10095;</button>
+        </div>
+    </section>
+
     <!-- Reviews Section -->
     <section class="reviews">
         <div class="container">
@@ -330,38 +392,229 @@
 
     <!-- Scripts -->
     <script>
-        // Loader
+        /* ===== Loader ===== */
         window.addEventListener("load", () => {
             document.body.classList.remove("loading");
-            document.getElementById("pageLoader").classList.add("hidden");
+            const loader = document.getElementById("pageLoader");
+            if (loader) loader.classList.add("hidden");
+
+            // Hash ile geldiyse (#galeri gibi), loader kapandıktan sonra kaydır
+            if (window.location.hash) {
+                const el = document.querySelector(window.location.hash);
+                if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 300);
+            }
         });
 
-        // Header Scroll Effect
-        window.addEventListener("scroll", () => {
-            const header = document.getElementById("header");
-            header.classList.toggle("scrolled", window.scrollY > 50);
-        });
+        /* ===== Header Scroll Effect (passive) ===== */
+        window.addEventListener(
+            "scroll",
+            () => {
+                const header = document.getElementById("header");
+                if (header) header.classList.toggle("scrolled", window.scrollY > 50);
+            },
+            { passive: true }
+        );
 
-        // Mobile Menu
-        const mobileToggle = document.getElementById("mobileToggle");
-        const navMenu = document.getElementById("navMenu");
+        /* ===== Mobile Menu ===== */
+        (function () {
+            const mobileToggle = document.getElementById("mobileToggle");
+            const navMenu = document.getElementById("navMenu");
+            if (!mobileToggle || !navMenu) return;
+            mobileToggle.addEventListener(
+                "click",
+                () => navMenu.classList.toggle("active"),
+                { passive: true }
+            );
+        })();
 
-        mobileToggle.addEventListener("click", () => {
-            navMenu.classList.toggle("active");
-        });
+        /* ===== Particles (hafifletilmiş + erişilebilir) ===== */
+        (function () {
+            const particlesContainer = document.getElementById("particles");
+            if (!particlesContainer) return;
 
-        // Particles
-        const particlesContainer = document.getElementById("particles");
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement("div");
-            particle.className = "particle";
-            particle.style.width = particle.style.height = Math.random() * 6 + 4 + "px";
-            particle.style.left = Math.random() * 100 + "vw";
-            particle.style.animationDuration = (Math.random() * 5 + 4) + "s";
-            particle.style.animationDelay = Math.random() * 5 + "s";
-            particlesContainer.appendChild(particle);
-        }
+            const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const isMobile = window.matchMedia("(max-width: 640px)").matches;
+            if (prefersReduced) return; // kullanıcı hareket istemiyorsa üretme
+
+            const COUNT = isMobile ? 8 : 16;
+            for (let i = 0; i < COUNT; i++) {
+                const p = document.createElement("div");
+                p.className = "particle";
+                p.style.width = p.style.height = (Math.random() * 6 + 4) + "px";
+                p.style.left = Math.random() * 100 + "vw";
+                p.style.animationDuration = (Math.random() * 4 + 4) + "s";
+                p.style.animationDelay = Math.random() * 3 + "s";
+                p.style.willChange = "transform, opacity";
+                particlesContainer.appendChild(p);
+            }
+        })();
+
+        /* ====== GALERİ: Lazy Loader (IntersectionObserver) ====== */
+        (function () {
+            const lazyImgs = document.querySelectorAll("img.lazy");
+            if (!lazyImgs.length) return;
+
+            // Eski tarayıcılar için basit fallback
+            if (!("IntersectionObserver" in window)) {
+                lazyImgs.forEach(img => {
+                    const ds = img.getAttribute("data-src");
+                    const dss = img.getAttribute("data-srcset");
+                    if (ds) img.src = ds;
+                    if (dss) img.srcset = dss;
+                    img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+                });
+                return;
+            }
+
+            const io = new IntersectionObserver(
+                (entries, obs) => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        const img = entry.target;
+                        const ds = img.getAttribute("data-src");
+                        const dss = img.getAttribute("data-srcset");
+                        if (ds) img.src = ds;
+                        if (dss) img.srcset = dss;
+                        img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+                        obs.unobserve(img);
+                    });
+                },
+                { rootMargin: "200px 0px" }
+            );
+
+            lazyImgs.forEach(img => io.observe(img));
+        })();
+
+        /* ===== GALERİ Lightbox (grid görünür olunca devreye girer) ===== */
+        (function () {
+            const grid = document.getElementById("galleryGrid");
+            if (!grid) return;
+
+            const lb = document.getElementById("lightbox");
+            const lbImg = document.getElementById("lbImg");
+            const lbCaption = document.getElementById("lbCaption"); // opsiyonel
+            const btnPrev = document.getElementById("lbPrev");
+            const btnNext = document.getElementById("lbNext");
+            const btnClose = document.getElementById("lbClose");
+
+            let items = [];
+            let idx = 0;
+            let bound = false;
+
+            // Büyük kaynak seçimi: data-full > currentSrc > src
+            function getFullUrl(fig) {
+                const img = fig.querySelector("img");
+                if (!img) return "";
+                return img.dataset.full || img.currentSrc || img.src || "";
+            }
+
+            function getCaption(fig) {
+                const img = fig.querySelector("img");
+                const capEl = fig.querySelector("figcaption");
+                return (capEl?.textContent?.trim()) || img?.alt || "";
+            }
+
+            function openAt(i) {
+                if (!items.length) return;
+                idx = (i + items.length) % items.length;
+
+                const fig = items[idx];
+                const full = getFullUrl(fig);
+                const cap = getCaption(fig);
+
+                lbImg.decoding = "async";
+                lbImg.loading = "eager";
+                lbImg.src = full;
+                lbImg.alt = cap || "";
+                if (lbCaption) lbCaption.textContent = cap;
+
+                lb.classList.add("open");
+                lb.setAttribute("aria-hidden", "false");
+                //document.documentElement.style.overflow = "hidden";
+            }
+
+            function closeLb() {
+                lb.classList.remove("open");
+                lb.setAttribute("aria-hidden", "true");
+                //document.documentElement.style.overflow = "";
+                setTimeout(() => (lbImg.src = ""), 120); // fade-out sonrası temizle
+            }
+
+            const prev = () => openAt(idx - 1);
+            const next = () => openAt(idx + 1);
+
+            function bind() {
+                if (bound) return;
+                bound = true;
+
+                items = Array.from(grid.querySelectorAll(".g-item"));
+
+                // Delegasyon: tek listener ile tüm kartlar
+                grid.addEventListener(
+                    "click",
+                    (e) => {
+                        const fig = e.target.closest(".g-item");
+                        if (!fig || !grid.contains(fig)) return;
+                        const iAttr = fig.getAttribute("data-index");
+                        const i = iAttr ? Number(iAttr) : items.indexOf(fig);
+                        if (i > -1) openAt(i);
+                    },
+                    { passive: true }
+                );
+
+                if (btnClose) btnClose.addEventListener("click", closeLb, { passive: true });
+                if (btnPrev) btnPrev.addEventListener("click", prev, { passive: true });
+                if (btnNext) btnNext.addEventListener("click", next, { passive: true });
+
+                // Dışa tıklayınca kapat
+                if (lb) {
+                    lb.addEventListener(
+                        "click",
+                        (e) => { if (e.target === lb) closeLb(); },
+                        { passive: true }
+                    );
+                }
+
+                // Klavye desteği
+                window.addEventListener("keydown", (e) => {
+                    if (!lb.classList.contains("open")) return;
+                    if (e.key === "Escape") return closeLb();
+                    if (e.key === "ArrowLeft") return prev();
+                    if (e.key === "ArrowRight") return next();
+                });
+
+                // Dokunmatik (swipe)
+                let tsX = 0, tsY = 0;
+                lb.addEventListener("touchstart", (e) => {
+                    const t = e.changedTouches[0];
+                    tsX = t.clientX; tsY = t.clientY;
+                }, { passive: true });
+
+                lb.addEventListener("touchend", (e) => {
+                    const t = e.changedTouches[0];
+                    const dx = t.clientX - tsX;
+                    const dy = t.clientY - tsY;
+                    if (Math.abs(dx) > 40 && Math.abs(dy) < 60) {
+                        if (dx < 0) next(); else prev();
+                    }
+                }, { passive: true });
+            }
+
+            // Grid görünür olduğunda bağlan (performans)
+            const io = new IntersectionObserver(
+                (entries) => {
+                    if (entries.some((e) => e.isIntersecting)) {
+                        bind();
+                        io.disconnect();
+                    }
+                },
+                { rootMargin: "200px" }
+            );
+            io.observe(grid);
+        })();
     </script>
+
+
 </body>
 
 </html>

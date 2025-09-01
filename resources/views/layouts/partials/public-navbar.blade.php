@@ -27,6 +27,7 @@
                 <li><a href="{{ url('/#galeri') }}">Galeri</a></li>
                 <li><a href="{{ url('/#iletisim') }}">İletişim</a></li>
             </ul>
+
             <div class="nav-buttons">
                 <a href="{{ route('reservation.index') }}">
                     <button class="btn-reservation">REZERVASYON</button>

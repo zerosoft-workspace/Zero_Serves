@@ -168,8 +168,19 @@
     </style>
 </head>
 
-<body class="menu-bg text-white min-h-screen scroll-smooth">
+<body class="menu-bg text-white min-h-screen scroll-smooth loading">
     @include('layouts.partials.public-navbar')
+
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-content">
+            <div class="loader-logo">ZeroSoft</div>
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- HERO -->
     <section class="hero-section flex items-center justify-center fade-in">
@@ -276,6 +287,11 @@
     @include('layouts.partials.public-footer')
 
     <script>
+        window.addEventListener("load", () => {
+            document.body.classList.remove("loading");
+            document.getElementById("pageLoader").classList.add("hidden");
+        });
+
         // fade-in
         const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }), { threshold: .1 });
         document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
