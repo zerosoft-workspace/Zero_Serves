@@ -11,7 +11,7 @@ class SessionManager {
         this.activityTimeout = null;
         this.isActive = true;
         this.lastActivity = Date.now();
-        this.sessionTimeout = 30 * 60 * 1000; // 30 dakika
+        this.sessionTimeout = 24 * 60 * 60 * 1000; // 24 saat (pratikte hiç dolmasın)
         this.browserCloseTimeout = 2 * 60 * 1000; // 2 dakika
         
         this.init();
@@ -118,13 +118,13 @@ class SessionManager {
     }
 
     /**
-     * İnaktivite kontrolü yapar
+     * İnaktivite kontrolü yapar (devre dışı)
      */
     checkInactivity() {
-        this.activityTimeout = setTimeout(() => {
-            this.isActive = false;
-            this.handleSessionExpired();
-        }, this.sessionTimeout);
+        // İnaktivite timeout'u tamamen devre dışı bırakıldı
+        // Kullanıcı hiçbir zaman oturumdan otomatik olarak atılmayacak
+        // setTimeout çağrısı kaldırıldı
+        console.log('İnaktivite kontrolü devre dışı - kullanıcı oturumda kalacak');
     }
 
     /**
@@ -134,26 +134,10 @@ class SessionManager {
         const browserClosingTime = localStorage.getItem('browser_closing');
         const pageHiddenTime = localStorage.getItem('page_hidden_time');
         
-        if (browserClosingTime) {
-            const timeDiff = Date.now() - parseInt(browserClosingTime);
-            
-            // 2 dakikadan fazla geçmişse oturumu sonlandır
-            if (timeDiff > this.browserCloseTimeout) {
-                this.handleSessionExpired();
-                return;
-            }
-        }
+        // Timeout kontrolleri devre dışı bırakıldı
+        // Kullanıcı oturumdan otomatik olarak atılmayacak
         
-        if (pageHiddenTime) {
-            const timeDiff = Date.now() - parseInt(pageHiddenTime);
-            
-            // 2 dakikadan fazla gizli kalmışsa kontrol et
-            if (timeDiff > this.browserCloseTimeout) {
-                this.checkSessionStatus();
-            }
-        }
-        
-        // Temizle
+        // Sadece localStorage temizleme işlemi yapılıyor
         localStorage.removeItem('browser_closing');
         localStorage.removeItem('page_hidden_time');
     }
@@ -211,9 +195,9 @@ class SessionManager {
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    this.handleSessionExpired();
-                }
+                // Session expired kontrolü devre dışı bırakıldı
+                // 401 hatası alınsa bile kullanıcı oturumdan atılmayacak
+                console.log('Heartbeat response not ok:', response.status);
             }
         } catch (error) {
             console.error('Heartbeat hatası:', error);
@@ -234,7 +218,9 @@ class SessionManager {
             });
 
             if (!response.ok || response.status === 401) {
-                this.handleSessionExpired();
+                // Session expired kontrolü devre dışı bırakıldı
+                // 401 hatası alınsa bile kullanıcı oturumdan atılmayacak
+                console.log('Session status check failed:', response.status);
             }
         } catch (error) {
             console.error('Session status kontrol hatası:', error);
@@ -242,19 +228,15 @@ class SessionManager {
     }
 
     /**
-     * Oturum süresi dolduğunda çalışır
+     * Oturum süresi dolduğunda çalışır (devre dışı)
      */
     handleSessionExpired() {
-        // Interval'ları temizle
-        if (this.tokenRefreshInterval) {
-            clearInterval(this.tokenRefreshInterval);
-        }
-        if (this.activityTimeout) {
-            clearTimeout(this.activityTimeout);
-        }
-
-        // Session expired sayfasına yönlendir
-        window.location.href = '/session-expired';
+        // Oturum sonlandırma ve yönlendirme devre dışı bırakıldı
+        // Kullanıcı oturumda kalacak ve anasayfaya yönlendirilmeyecek
+        console.log('Session timeout algılandı ancak kullanıcı oturumda kalıyor');
+        
+        // Sadece isActive durumunu false yap
+        this.isActive = false;
     }
 
     /**
