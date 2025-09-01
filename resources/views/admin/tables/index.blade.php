@@ -101,14 +101,14 @@
 
                             {{-- QR: responsive SVG --}}
                             <div class="qr-wrap text-center">
-                                {!! QrCode::size(512)->format('svg')->generate(route('customer.table.token', $table->token)) !!}
+                                {!! QrCode::size(512)->format('svg')->generate(\App\Helpers\NetworkHelper::getTableQrUrl($table->token)) !!}
                             </div>
 
                             {{-- Token --}}
                             <div class="small">
                                 <div class="text-muted mb-1">Token</div>
                                 <div class="d-flex flex-wrap align-items-center gap-2">
-                                    <a href="{{ route('customer.table.token', $table->token) }}" target="_blank"
+                                    <a href="{{ \App\Helpers\NetworkHelper::getTableQrUrl($table->token) }}" target="_blank"
                                         class="text-decoration-none text-break">{{ $table->token }}</a>
                                 </div>
                             </div>
@@ -118,7 +118,7 @@
                                 <div class="d-grid gap-2 d-md-flex">
                                     {{-- Kopyala --}}
                                     <button type="button" class="btn btn-info w-100 w-md-auto"
-                                        data-copy="{{ $table->token }}">Kopyala</button>
+                                        data-copy="{{ \App\Helpers\NetworkHelper::getTableQrUrl($table->token) }}">URL Kopyala</button>
 
                                     {{-- Temizle --}}
                                     <form action="{{ route('admin.tables.clear', $table->id) }}" method="POST"
