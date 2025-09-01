@@ -14,10 +14,8 @@ class WaiterAuthController extends Controller
     /** Giriş formu */
     public function showLoginForm()
     {
-        if (Auth::guard('waiter')->check()) {
-            return redirect()->route('waiter.dashboard');
-        }
-
+        // İlk giriş sırasında yönlendirme yapma, sadece login sayfasını göster
+        // Middleware zaten yetkisiz erişimleri engelleyecek
         return view('waiter.auth.login');
     }
 

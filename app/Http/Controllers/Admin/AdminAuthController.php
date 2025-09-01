@@ -14,10 +14,8 @@ class AdminAuthController extends Controller
     /** Login formu */
     public function showLoginForm()
     {
-        if (Auth::guard('admin')->check()) {
-            return redirect()->route('admin.dashboard');
-        }
-
+        // İlk giriş sırasında yönlendirme yapma, sadece login sayfasını göster
+        // Middleware zaten yetkisiz erişimleri engelleyecek
         return view('admin.auth.login'); // resources/views/admin/auth/login.blade.php
     }
 

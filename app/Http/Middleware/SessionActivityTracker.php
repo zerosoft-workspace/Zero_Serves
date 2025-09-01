@@ -15,7 +15,9 @@ class SessionActivityTracker
      */
     public function handle(Request $request, Closure $next)
     {
-        // Tüm guard'ları kontrol et ve aktif olanları güncelle
+        // Sadece aktivite takibi yap, timeout kontrolü yapma
+        // HandleSessionTimeout middleware'i timeout'u hallediyor
+        
         $guards = ['web', 'admin', 'waiter', 'customer'];
         
         foreach ($guards as $guard) {
@@ -28,31 +30,8 @@ class SessionActivityTracker
                     ->update(['last_activity' => Carbon::now()]);
                 
                 // Session'da da son aktivite zamanını sakla
-                session(['last_activity' => Carbon::now()->timestamp]);
+                session(['last_activity' => time()]);
             }
-        }
-
-        // Session süresi kontrolü (config'den dakika cinsinden al, saniyeye çevir)
-        $sessionLifetime = config('session.lifetime') * 60; // dakikayı saniyeye çevir
-        if (session('last_activity') && (time() - session('last_activity')) > $sessionLifetime) {
-            // Tüm guard'lardan çıkış yap
-            foreach ($guards as $guard) {
-                if (Auth::guard($guard)->check()) {
-                    Auth::guard($guard)->logout();
-                }
-            }
-            session()->flush();
-            
-            // AJAX isteği ise JSON döndür
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Oturum süresi doldu',
-                    'redirect' => route('session.expired')
-                ], 401);
-            }
-            
-            return redirect()->route('session.expired');
         }
 
         return $next($request);

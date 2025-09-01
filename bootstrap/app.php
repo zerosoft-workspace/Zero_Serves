@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global middleware
         $middleware->web(append: [
             \App\Http\Middleware\SessionActivityTracker::class,
+            \App\Http\Middleware\HandleSessionTimeout::class,
         ]);
 
     })
