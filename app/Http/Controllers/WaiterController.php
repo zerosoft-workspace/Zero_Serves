@@ -35,17 +35,21 @@ class WaiterController extends Controller
     // Garson ana sayfa: masa listesi
     public function index(Request $request)
     {
+        $user = Auth::user();
+        
         // Filtreleme parametreleri
         $query = request('q');
         $statusFilter = request('status');
 
-        // Cache anahtarı oluştur (filtreler dahil)
-        $cacheKey = 'waiter_dashboard_' . md5($query . '_' . $statusFilter);
+        // Cache anahtarı oluştur (filtreler ve garson ID dahil)
+        $cacheKey = 'waiter_dashboard_' . $user->id . '_' . md5($query . '_' . $statusFilter);
 
-        $data = $this->cacheQuery($cacheKey, function () use ($query, $statusFilter) {
-            // Optimize edilmiş masa sorgusu
+        // Cache'i devre dışı bırak - her zaman güncel veri getir
+        $data = (function () use ($query, $statusFilter, $user) {
+            // Sadece bu garsona atanan masaları getir
             $tablesQuery = Table::query()
-                ->select(['id', 'name', 'status', 'capacity'])
+                ->select(['id', 'name', 'status', 'capacity', 'waiter_id'])
+                ->where('waiter_id', $user->id)
                 ->with([
                     'active_order' => function ($q) {
                         $q->select(['id', 'table_id', 'status', 'total_amount', 'created_at'])
@@ -67,17 +71,20 @@ class WaiterController extends Controller
 
             $tables = $tablesQuery->get();
 
-            // Aktif garson çağrıları - optimize edilmiş
+            // Sadece bu garsona atanan masalardan gelen çağrılar
             $activeCalls = WaiterCall::query()
                 ->select(['id', 'table_id', 'status', 'created_at'])
                 ->with(['table:id,name'])
+                ->whereHas('table', function ($q) use ($user) {
+                    $q->where('waiter_id', $user->id);
+                })
                 ->where('status', 'new')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
 
             return compact('tables', 'activeCalls');
-        }, self::CACHE_SHORT);
+        })();
 
         $tables = $data['tables'];
         $activeCalls = $data['activeCalls'];
@@ -89,12 +96,25 @@ class WaiterController extends Controller
     // Masa detay sayfası
     public function showTable($id)
     {
-        $cacheKey = "waiter_table_{$id}";
+        $user = Auth::user();
+        
+        // Garson yetki kontrolü - sadece kendi masalarına erişebilir
+        $user = Auth::user();
+        if (!$user || $user->role !== 'waiter') {
+            abort(403, 'Bu sayfaya erişim yetkiniz yok.');
+        }
 
-        $data = $this->cacheQuery($cacheKey, function () use ($id) {
-            $table = Table::select(['id', 'name', 'status', 'capacity'])
-                ->findOrFail($id);
+        // Masanın bu garsona atanıp atanmadığını kontrol et
+        $table = Table::select(['id', 'name', 'status', 'capacity', 'waiter_id'])
+            ->where('id', $id)
+            ->where('waiter_id', $user->id)
+            ->first();
+            
+        if (!$table) {
+            abort(403, 'Bu masaya erişim yetkiniz yok.');
+        }
 
+        $data = (function () use ($table) {
             // Mevcut sipariş (ödenmemiş) - optimize edilmiş eager loading
             $currentOrder = Order::query()
                 ->select(['id', 'table_id', 'status', 'total_amount', 'created_at', 'updated_at'])
@@ -125,7 +145,7 @@ class WaiterController extends Controller
                 ->get();
 
             return compact('table', 'currentOrder', 'pastOrders');
-        }, self::CACHE_SHORT);
+        })();
 
         $table = $data['table'];
         $currentOrder = $data['currentOrder'];
@@ -150,13 +170,22 @@ class WaiterController extends Controller
             ], 403);
         }
 
+        // Siparişin masasının bu garsona ait olup olmadığını kontrol et
+        if ($order->table && $order->table->waiter_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bu siparişe erişim yetkiniz yok.'
+            ], 403);
+        }
+
         // Debug için request içeriğini logla
         \Log::info('WaiterController updateOrderStatus request:', [
             'all_data' => $request->all(),
             'is_ajax' => $request->ajax(),
             'wants_json' => $request->wantsJson(),
             'content_type' => $request->header('Content-Type'),
-            'method' => $request->method()
+            'method' => $request->method(),
+            'order_current_status' => $order->status
         ]);
 
         // Hem status hem to_status parametrelerini kontrol et
@@ -180,43 +209,67 @@ class WaiterController extends Controller
 
         $from = (string) $order->status;
 
+        // Debug için transition kontrolü
+        \Log::info('WaiterController transition check:', [
+            'order_id' => $order->id,
+            'from' => $from,
+            'to' => $to,
+            'can_transition' => $order->canTransitionTo($to, 'waiter'),
+            'waiter_transitions' => \App\Models\Order::$TRANSITIONS['waiter'] ?? []
+        ]);
+
         if (!$order->canTransitionTo($to, 'waiter')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Geçersiz durum geçişi.',
+                'message' => "Geçersiz durum geçişi: {$from} -> {$to}",
                 'from' => $from,
                 'to' => $to,
+                'allowed_transitions' => \App\Models\Order::$TRANSITIONS['waiter'][$from] ?? []
             ], 422);
         }
 
-        DB::transaction(function () use ($order, $from, $to, $user) {
-            $order->status = $to;
-            $order->save();
+        try {
+            DB::transaction(function () use ($order, $from, $to, $user) {
+                $order->status = $to;
+                $order->save();
 
-            // Stok işlemleri
-            if ($to === 'paid' && $from !== 'paid') {
-                // Sipariş ödendi, stoktan düş
-                $this->stockService->updateStockAfterOrder($order);
-            } elseif ($to === 'canceled' && in_array($from, ['preparing', 'delivered', 'paid'])) {
-                // Sipariş iptal edildi, stoku geri yükle
-                $this->stockService->restoreStockAfterCancellation($order);
-            }
+                // Masa durumunu güncelle
+                if ($order->table) {
+                    $order->table->updateStatusBasedOnOrders();
+                }
 
-            // Masa durumunu güncelle
-            if ($order->table) {
-                $order->table->updateStatusBasedOnOrders();
-            }
+                OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'from_status' => $from,
+                    'to_status' => $to,
+                    'changed_by' => $user?->id,
+                ]);
 
-            OrderStatusLog::create([
+                // Cache temizleme
+                $this->clearOrderCache($order->table_id);
+            });
+        } catch (\Exception $e) {
+            \Log::error('WaiterController updateOrderStatus transaction error:', [
+                'error' => $e->getMessage(),
                 'order_id' => $order->id,
-                'from_status' => $from,
-                'to_status' => $to,
-                'changed_by' => $user?->id,
+                'from' => $from,
+                'to' => $to,
             ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Durum güncellenirken hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
 
-            // Cache temizleme
-            $this->clearOrderCache($order->table_id);
-        });
+        // Debug için response logla
+        \Log::info('WaiterController updateOrderStatus response:', [
+            'success' => true,
+            'order_id' => $order->id,
+            'from' => $from,
+            'to' => $to,
+            'new_status' => $to,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -234,45 +287,39 @@ class WaiterController extends Controller
     protected function clearOrderCache(int $tableId): void
     {
         try {
+            $user = Auth::user();
+            
             // Spesifik masa cache'ini temizle
-            Cache::forget("waiter_table_{$tableId}");
-
-            // Dashboard cache'lerini temizle - tüm olası kombinasyonlar
+            Cache::forget("waiter_table_{$user->id}_{$tableId}");
+            
+            // Dashboard cache'lerini temizle - garson bazlı
             $dashboardKeys = [
-                'waiter_dashboard_' . md5('_'),
-                'waiter_dashboard_' . md5('pending_'),
-                'waiter_dashboard_' . md5('preparing_'),
-                'waiter_dashboard_' . md5('delivered_'),
-                'waiter_dashboard_' . md5('paid_'),
+                "waiter_dashboard_{$user->id}",
+                "waiter_tables_{$user->id}",
+                "waiter_calls_{$user->id}_page_1",
             ];
 
             foreach ($dashboardKeys as $key) {
                 Cache::forget($key);
             }
 
-            // Cache driver'a göre pattern matching
-            if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
-                $redis = Cache::getStore()->getRedis();
-                $keys = $redis->keys('*waiter_dashboard_*');
-                if (!empty($keys)) {
-                    $redis->del($keys);
-                }
+            // Tüm waiter cache'lerini temizle
+            $patterns = [
+                "waiter_dashboard_{$user->id}*",
+                "waiter_tables_{$user->id}*", 
+                "waiter_calls_{$user->id}*",
+                "waiter_table_{$user->id}*"
+            ];
 
-                $callKeys = $redis->keys('*waiter_calls_*');
-                if (!empty($callKeys)) {
-                    $redis->del($callKeys);
-                }
-            } else {
-                // File cache veya diğer driver'lar için
-                // Güvenli cache temizleme
-                $patterns = ['waiter_dashboard_', 'waiter_calls_'];
-                foreach ($patterns as $pattern) {
-                    // Manuel olarak bilinen cache key'leri temizle
-                    for ($i = 1; $i <= 10; $i++) {
-                        Cache::forget($pattern . 'page_' . $i);
-                    }
-                }
+            foreach ($patterns as $pattern) {
+                Cache::forget($pattern);
             }
+
+            \Log::info('Cache temizlendi:', [
+                'user_id' => $user->id,
+                'table_id' => $tableId,
+                'cleared_keys' => $dashboardKeys
+            ]);
 
         } catch (\Exception $e) {
             // Cache temizleme hatası durumunda log'la
@@ -286,13 +333,17 @@ class WaiterController extends Controller
     // Garson çağrıları listesi
     public function calls()
     {
+        $user = Auth::user();
         $page = request('page', 1);
-        $cacheKey = "waiter_calls_page_{$page}";
+        $cacheKey = "waiter_calls_{$user->id}_page_{$page}";
 
-        $calls = $this->cacheQuery($cacheKey, function () {
+        $calls = $this->cacheQuery($cacheKey, function () use ($user) {
             return WaiterCall::query()
                 ->select(['id', 'table_id', 'status', 'message', 'created_at', 'responded_at', 'completed_at', 'responded_by'])
                 ->with(['table:id,name'])
+                ->whereHas('table', function ($q) use ($user) {
+                    $q->where('waiter_id', $user->id);
+                })
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
         }, self::CACHE_SHORT);

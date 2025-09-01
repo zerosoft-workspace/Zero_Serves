@@ -347,6 +347,16 @@
                 console.log('Yeni durum:', data.new_status);
                 setButtonsByStatus(data.new_status);
 
+                // Ana sayfayı da güncelle (dashboard)
+                if (window.opener && !window.opener.closed) {
+                    window.opener.location.reload();
+                }
+                
+                // Bu sayfayı da yenile
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+
                 // Başarı mesajı göster
                 if (flash) {
                     flash.className = 'alert alert-success';

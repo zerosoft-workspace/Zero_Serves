@@ -10,7 +10,8 @@ class Table extends Model
         'name',
         'token',
         'qr_code_path',
-        'status'
+        'status',
+        'waiter_id'
     ];
 
     public function orders()
@@ -22,6 +23,14 @@ class Table extends Model
         return $this->hasOne(Order::class, 'table_id', 'id')
             ->whereNotIn('status', ['paid', 'canceled']) // ödenmiş ve iptal edilmiş siparişleri hariç tut
             ->latest();
+    }
+
+    /**
+     * Masaya atanan garson
+     */
+    public function waiter()
+    {
+        return $this->belongsTo(User::class, 'waiter_id');
     }
 
     /**

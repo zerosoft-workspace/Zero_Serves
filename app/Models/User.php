@@ -38,6 +38,14 @@ class User extends Authenticatable
      * Override remember_token set
      */
     /**
+     * Garsona atanan masalar
+     */
+    public function assignedTables()
+    {
+        return $this->hasMany(Table::class, 'waiter_id');
+    }
+
+    /**
      * Override remember_token set
      */
     public function setRememberToken($value)

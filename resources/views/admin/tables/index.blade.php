@@ -82,6 +82,23 @@
                                 </span>
                             </div>
 
+                            {{-- Garson Atama --}}
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Atanan Garson</label>
+                                <select class="form-select form-select-sm waiter-select" data-table-id="{{ $table->id }}">
+                                    <option value="">Garson Seçin</option>
+                                    @foreach($waiters as $waiter)
+                                        <option value="{{ $waiter->id }}" 
+                                            {{ $table->waiter_id == $waiter->id ? 'selected' : '' }}>
+                                            {{ $waiter->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if($table->waiter)
+                                    <small class="text-muted">{{ $table->waiter->email }}</small>
+                                @endif
+                            </div>
+
                             {{-- QR: responsive SVG --}}
                             <div class="qr-wrap text-center">
                                 {!! QrCode::size(512)->format('svg')->generate(route('customer.table.token', $table->token)) !!}
@@ -169,6 +186,58 @@
                 setTimeout(() => btn.textContent = original, 1200);
             } catch (err) {
                 alert('Kopyalama desteklenmiyor.');
+            }
+        });
+
+        // Garson atama
+        document.addEventListener('change', async (e) => {
+            if (!e.target.classList.contains('waiter-select')) return;
+            
+            const select = e.target;
+            const tableId = select.dataset.tableId;
+            const waiterId = select.value || null;
+            
+            try {
+                const response = await fetch('/admin/tables/assign-waiter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        table_id: tableId,
+                        waiter_id: waiterId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Başarı mesajı göster
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                    alert.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(alert);
+                    
+                    // 3 saniye sonra otomatik kapat
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.remove();
+                        }
+                    }, 3000);
+                } else {
+                    alert('Hata: ' + data.message);
+                    // Seçimi eski haline döndür
+                    select.selectedIndex = 0;
+                }
+            } catch (error) {
+                console.error('Garson atama hatası:', error);
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+                select.selectedIndex = 0;
             }
         });
     </script>
