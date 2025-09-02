@@ -27,7 +27,7 @@
             <table class="table align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th>
+
                         <th>Ad Soyad</th>
                         <th>Telefon</th>
                         <th>E-posta</th>
@@ -42,7 +42,7 @@
                 <tbody>
                     @forelse($reservations as $r)
                         <tr>
-                            <td>{{ $r->id }}</td>
+
                             <td>{{ $r->name }}</td>
                             <td>{{ $r->phone }}</td>
                             <td>{{ $r->email }}</td>

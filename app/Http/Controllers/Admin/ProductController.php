@@ -11,12 +11,42 @@ use App\Models\OrderItem;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->get();
-        $categories = Category::all();
+        $q = trim((string) $request->get('q'));            // isim/açıklama arama
+        $category = $request->get('category');                    // kategori id
+        $status = $request->get('status');                      // active | inactive | low_stock
+
+        $products = Product::query()
+            ->with('category')
+            ->when($q !== '', function ($builder) use ($q) {
+                $builder->where(function ($w) use ($q) {
+                    $w->where('name', 'like', "%{$q}%")
+                        ->orWhere('description', 'like', "%{$q}%");
+                });
+            })
+            ->when($category !== null && $category !== '', function ($builder) use ($category) {
+                $builder->where('category_id', $category);
+            })
+            ->when($status === 'active', function ($builder) {
+                $builder->where('is_active', true);
+            })
+            ->when($status === 'inactive', function ($builder) {
+                $builder->where('is_active', false);
+            })
+            ->when($status === 'low_stock', function ($builder) {
+                // low stock: stok <= min
+                $builder->whereColumn('stock_quantity', '<=', 'min_stock_level');
+            })
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString(); // filtreler sayfalama linklerinde kalsın
+
+        $categories = Category::orderBy('name')->get();
+
         return view('admin.products.index', compact('products', 'categories'));
     }
+
 
     public function store(Request $request)
     {
@@ -59,7 +89,7 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
-        
+
         $request->validate([
             'name' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
