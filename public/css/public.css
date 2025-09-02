@@ -1624,3 +1624,115 @@ section.contact {
     filter: blur(0);
     transition: filter 0.35s ease;
 }
+/* === GLOBAL RESET & TAŞMA ÖNLEME === MOBİLE uyumlu*/
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+html,
+body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+/* Scroll bar yüzünden 100vw taşımasını engelle */
+:root {
+    --safevw: 100%;
+} /* 100vw yerine bunu kullan */
+.container,
+.container-fluid,
+.wrapper {
+    max-width: 100%;
+}
+
+/* Görseller, videolar, iframe’ler taşmasın */
+img,
+video,
+canvas,
+svg,
+iframe {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Büyük başlıklar mobilde taşmasın */
+h1,
+.display-1 {
+    font-size: clamp(1.6rem, 6.5vw, 3rem);
+    word-wrap: break-word;
+}
+h2 {
+    font-size: clamp(1.3rem, 5.5vw, 2.2rem);
+}
+
+/* Section iç boşlukları */
+section {
+    padding-left: clamp(12px, 4vw, 28px);
+    padding-right: clamp(12px, 4vw, 28px);
+}
+
+/* Bootstrap satırlarının negatif margin taşmasını önle */
+.row {
+    --bs-gutter-x: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+}
+.row > [class^="col"] {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+/* Sabit genişlikli BUTON/KART bozuyorsa mobilde esnet */
+@media (max-width: 768px) {
+    .btn,
+    .card,
+    .g-item,
+    .feature-box,
+    .hero-cta {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+/* 100vw kullanan yerlere kalkan: (hero, slider, full-width görseller) */
+.full-bleed,
+.hero,
+.slider,
+.gallery-viewport {
+    width: var(--safevw);
+    max-width: 100%;
+}
+
+/* Parallax / translate gölgeleri taşırmasın */
+.overflow-clip,
+.hero,
+.slider,
+.gallery-wrapper {
+    overflow: hidden;
+}
+
+/* Sabit konumlu header’ın sağ-sol taşımasını önle */
+header,
+.navbar {
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+/* iOS “pull to refresh” & zıplama */
+html {
+    overscroll-behavior-x: none;
+}
+
+/* Scrollbar gizle (yatay) – istersen koru */
+body {
+    scrollbar-width: thin;
+}
+.gallery-viewport::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+}
