@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Rezervasyon</title>
 
     {{-- Site stilin --}}
@@ -102,6 +103,9 @@
 
     @include('layouts.partials.public-footer')
 
+    {{-- Session Manager --}}
+    <script src="{{ asset('js/session-manager.js') }}"></script>
+    
     {{-- Flatpickr --}}
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
@@ -131,6 +135,39 @@
             }
             adjustMinTime(); fpDate.config.onChange.push(adjustMinTime);
         })();
+
+        // Rezervasyon formu için CSRF token yenileme
+        const reservationForm = document.querySelector('form[action*="reservation"]');
+        if (reservationForm) {
+            reservationForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    // Token'ı yenile
+                    const response = await fetch('/api/csrf-token');
+                    const data = await response.json();
+                    
+                    // Form'daki token'ı güncelle
+                    const tokenInput = this.querySelector('input[name="_token"]');
+                    if (tokenInput) {
+                        tokenInput.value = data.token;
+                    }
+                    
+                    // Meta tag'ı da güncelle
+                    const metaTag = document.querySelector('meta[name="csrf-token"]');
+                    if (metaTag) {
+                        metaTag.setAttribute('content', data.token);
+                    }
+                    
+                    // Formu gönder
+                    this.submit();
+                } catch (error) {
+                    console.error('CSRF token yenileme hatası:', error);
+                    // Hata durumunda formu olduğu gibi gönder
+                    this.submit();
+                }
+            });
+        }
          // Header Scroll Effect
         window.addEventListener("scroll", () => {
             const header = document.getElementById("header");

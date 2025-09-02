@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Reservation;
+use App\Mail\ReservationApproved;
+use App\Mail\ReservationRejected;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ReservationController extends Controller
 {
@@ -44,6 +47,54 @@ class ReservationController extends Controller
             $reservation->save();
         }
         return view('admin.reservations.show', compact('reservation'));
+    }
+
+    // Rezervasyon Onaylama
+    public function approve(Reservation $reservation, Request $request)
+    {
+        $request->validate([
+            'admin_note' => 'nullable|string|max:500'
+        ]);
+
+        $reservation->update([
+            'status' => 'approved',
+            'admin_note' => $request->admin_note,
+            'status_updated_at' => now(),
+            'status_updated_by' => auth()->id()
+        ]);
+
+        try {
+            Mail::to($reservation->email)->send(new ReservationApproved($reservation));
+            $message = 'Rezervasyon onaylandı ve müşteriye e-posta gönderildi.';
+        } catch (\Exception $e) {
+            $message = 'Rezervasyon onaylandı ancak e-posta gönderilemedi: ' . $e->getMessage();
+        }
+
+        return back()->with('success', $message);
+    }
+
+    // Rezervasyon Reddetme
+    public function reject(Reservation $reservation, Request $request)
+    {
+        $request->validate([
+            'admin_note' => 'nullable|string|max:500'
+        ]);
+
+        $reservation->update([
+            'status' => 'rejected',
+            'admin_note' => $request->admin_note,
+            'status_updated_at' => now(),
+            'status_updated_by' => auth()->id()
+        ]);
+
+        try {
+            Mail::to($reservation->email)->send(new ReservationRejected($reservation));
+            $message = 'Rezervasyon reddedildi ve müşteriye e-posta gönderildi.';
+        } catch (\Exception $e) {
+            $message = 'Rezervasyon reddedildi ancak e-posta gönderilemedi: ' . $e->getMessage();
+        }
+
+        return back()->with('success', $message);
     }
 
     // Sil

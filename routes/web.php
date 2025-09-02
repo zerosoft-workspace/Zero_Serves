@@ -141,6 +141,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'multi.auth:ad
     Route::prefix('reservations')->name('reservations.')->controller(AdminReservationController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/{reservation}', 'show')->whereNumber('reservation')->name('show');
+        Route::post('/{reservation}/approve', 'approve')->whereNumber('reservation')->name('approve');
+        Route::post('/{reservation}/reject', 'reject')->whereNumber('reservation')->name('reject');
         Route::delete('/{reservation}', 'destroy')->whereNumber('reservation')->name('destroy');
         Route::get('/_unread-count', 'unreadCount')->name('unread_count');
 

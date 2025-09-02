@@ -34,6 +34,7 @@
                         <th>Tarih</th>
                         <th>Saat</th>
                         <th>Kişi</th>
+                        <th>Durum</th>
                         <th>Gönderim</th>
                         <th class="text-end">İşlemler</th>
                     </tr>
@@ -54,6 +55,7 @@
                                 {{ $t ? $t->format('H:i') : '-' }}
                             </td>
                             <td>{{ $r->people ?? '-' }}</td>
+                            <td>{!! $r->status_badge !!}</td>
                             <td>{{ optional($r->created_at)->format('d.m.Y H:i') }}</td>
                             <td class="text-end">
                                 <a href="{{ route('admin.reservations.show', $r) }}" class="btn btn-sm btn-outline-primary">
@@ -68,7 +70,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
+                            <td colspan="10" class="text-center text-muted py-4">Kayıt bulunamadı.</td>
                         </tr>
                     @endforelse
                 </tbody>
