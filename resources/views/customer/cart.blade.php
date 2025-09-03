@@ -1,248 +1,355 @@
-@extends('layouts.customer')
+{{-- resources/views/customer/cart.blade.php --}}
+<!DOCTYPE html>
+<html lang="tr">
 
-@section('title', 'Sepetim')
-@section('table_name', $table->name)
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Sepetim | SoftFood</title>
 
-@push('styles')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/public.css') }}">
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <style>
-        .cart-item {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
+        .font-playfair {
+            font-family: 'Playfair Display', serif
         }
 
-        .cart-item:hover {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .font-inter {
+            font-family: 'Inter', sans-serif
         }
 
-        .cart-item-image {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 0.375rem;
+        :root {
+            --primary: #ff6b35;
+            --primary-dark: #e55a2b;
+            --bg-dark: #0a0a0a;
+            --bg-card: #111214;
+            --text: #fff;
+            --text-muted: #a0a0a0;
+            --border: rgba(255, 255, 255, .1)
         }
 
-        .quantity-controls {
+        body {
+            background: var(--bg-dark);
+            color: var(--text)
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, .95);
+            z-index: 1000;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 107, 53, .2);
+            backdrop-filter: blur(15px)
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: space-between;
+            padding: 0 20px
         }
 
-        .quantity-btn {
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ff6b35;
+            text-decoration: none
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            margin: 0;
+            padding: 0
+        }
+
+        .nav-menu a {
+            color: #fff;
+            text-decoration: none
+        }
+
+        .nav-menu a:hover {
+            color: #ff6b35
+        }
+
+        .order-btn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            padding: 14px 26px;
+            border-radius: 30px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, .4)
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, .08);
+            padding: 10px 14px;
+            border-radius: 12px
+        }
+
+        .cart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px
+        }
+
+        .qty-btn {
             width: 32px;
             height: 32px;
-            border: 1px solid #dee2e6;
-            background: white;
-            border-radius: 0.25rem;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 900
+        }
+
+        .divider {
+            border-top: 1px solid var(--border)
+        }
+
+        /* Disabled durum */
+        .is-disabled,
+        button:disabled {
+            opacity: .5;
+            pointer-events: none;
+            cursor: not-allowed !important;
+        }
+
+        /* Sticky footer */
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            min-height: 100svh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            flex-direction: column;
         }
 
-        .quantity-btn:hover {
-            background: #f8f9fa;
-            border-color: #0d6efd;
+        main {
+            flex: 1;
         }
 
-        .quantity-input {
-            width: 50px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-            border-radius: 0.25rem;
-            padding: 0.25rem;
+        footer,
+        .site-footer {
+            margin-top: auto;
         }
 
-        .cart-summary {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            position: sticky;
-            top: 20px;
-        }
-
-        .empty-cart {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #6c757d;
-        }
-
-        .empty-cart i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
+        @media (max-width:768px) {
+            .nav-menu {
+                display: none
+            }
         }
     </style>
-@endpush
+</head>
 
-@section('content')
-    {{-- Alerts --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+<body class="font-inter">
 
-    {{-- Navigation --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-cart3 me-2"></i>Sepetim</h2>
-        <div>
-            <a href="{{ route('customer.table.token', $table->token) }}" class="btn btn-outline-secondary me-2">
-                <i class="bi bi-house me-1"></i>Ana Sayfa
-            </a>
-            <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-primary">
-                <i class="bi bi-list-ul me-1"></i>Menüye Dön
-            </a>
-        </div>
-    </div>
+    {{-- Header --}}
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">SoftFood</a>
+            <ul class="nav-menu">
+                <li><a
+                        href="{{ route('customer.table.token', ['token' => $table->token, 'view' => 'dashboard']) }}">Menü</a>
+                </li>
+                <li><a href="{{ route('customer.cart.view', ['token' => $table->token]) }}">Sepetim</a></li>
+                <li><a
+                        href="{{ route('customer.table.token', ['token' => $table->token, 'view' => 'orders']) }}">Siparişlerim</a>
+                </li>
+            </ul>
+            <div class="flex items-center gap-3 text-sm text-gray-300">
+                <i class="fas fa-qrcode"></i>
+                {{ $table->name ?? 'Dijital Menü' }}
+            </div>
+        </nav>
+    </header>
 
-    @php 
-        $cart = session('cart', []);
-        $total = 0;
-    @endphp
-
-    @if(empty($cart))
-        <div class="empty-cart">
-            <i class="bi bi-cart-x"></i>
-            <h4>Sepetiniz Boş</h4>
-            <p class="mb-4">Henüz sepetinize ürün eklemediniz. Menüden beğendiğiniz ürünleri seçebilirsiniz.</p>
-            <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-primary btn-lg">
-                <i class="bi bi-list-ul me-2"></i>Menüyü Görüntüle
+    {{-- Page --}}
+    <main class="max-w-4xl mx-auto px-4" style="padding-top:110px;padding-bottom:48px">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="font-playfair text-3xl font-bold">Sepetim</h1>
+                <p class="text-gray-400">Ürünlerinizi inceleyebilir, adetleri değiştirebilir ve sipariş verebilirsiniz.
+                </p>
+            </div>
+            <a href="{{ url()->previous() }}" class="back-btn inline-flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Geri
             </a>
         </div>
-    @else
-        <div class="row">
-            <div class="col-12 col-lg-8">
-                {{-- Cart Items --}}
-                @foreach($cart as $productId => $item)
-                    @php 
-                        $lineTotal = $item['price'] * $item['qty'];
-                        $total += $lineTotal;
-                        $product = App\Models\Product::find($productId);
-                    @endphp
-                    <div class="cart-item">
-                        <div class="row align-items-center">
-                            <div class="col-auto">
-                                @if($product && !empty($product->image))
-                                    <img src="{{ asset($product->image) }}" class="cart-item-image" alt="{{ $item['name'] }}">
-                                @else
-                                    <div class="cart-item-image bg-light d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-image text-muted"></i>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="col">
-                                <h5 class="mb-1">{{ $item['name'] }}</h5>
-                                <p class="text-muted mb-2">{{ number_format($item['price'], 2) }} ₺</p>
-                                
-                                <div class="quantity-controls">
-                                    <form method="POST" action="{{ route('customer.cart.add', $table->token) }}" class="d-inline">
-                                        @csrf
-                                        <input type="hidden" name="product_id" value="{{ $productId }}">
-                                        <input type="hidden" name="qty" value="-1">
-                                        <button type="submit" class="quantity-btn" {{ $item['qty'] <= 1 ? 'disabled' : '' }}>
-                                            <i class="bi bi-dash"></i>
-                                        </button>
-                                    </form>
-                                    
-                                    <input type="text" class="quantity-input" value="{{ $item['qty'] }}" readonly>
-                                    
-                                    <form method="POST" action="{{ route('customer.cart.add', $table->token) }}" class="d-inline">
-                                        @csrf
-                                        <input type="hidden" name="product_id" value="{{ $productId }}">
-                                        <input type="hidden" name="qty" value="1">
-                                        <button type="submit" class="quantity-btn">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="col-auto text-end">
-                                <div class="fw-bold fs-5 mb-2">{{ number_format($lineTotal, 2) }} ₺</div>
-                                <form method="POST" action="{{ route('customer.cart.remove', [$table->token, $productId]) }}" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
 
-                {{-- Clear Cart --}}
-                <div class="text-center mt-3">
-                    <form method="POST" action="{{ route('customer.cart.clear', $table->token) }}" class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-secondary" onclick="return confirm('Sepeti tamamen boşaltmak istediğinizden emin misiniz?')">
-                            <i class="bi bi-trash me-1"></i>Sepeti Boşalt
-                        </button>
-                    </form>
-                </div>
+        {{-- Sepet listesi --}}
+        <section id="cartList" class="space-y-3"></section>
+
+        {{-- Özet --}}
+        <section class="cart-card mt-6 p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-lg font-semibold">Toplam</span>
+                <span id="sumTotal" class="text-2xl font-extrabold text-orange-500">0,00 ₺</span>
             </div>
 
-            <div class="col-12 col-lg-4">
-                {{-- Cart Summary --}}
-                <div class="cart-summary">
-                    <h4 class="mb-3"><i class="bi bi-receipt me-2"></i>Sipariş Özeti</h4>
-                    
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Ürün Sayısı:</span>
-                        <span>{{ count($cart) }}</span>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Toplam Adet:</span>
-                        <span>{{ array_sum(array_column($cart, 'qty')) }}</span>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="fw-bold fs-5">Toplam:</span>
-                        <span class="fw-bold fs-4 text-primary">{{ number_format($total, 2) }} ₺</span>
-                    </div>
+            <div class="divider my-4"></div>
 
-                    <div class="d-grid gap-2">
-                        <form method="POST" action="{{ route('customer.checkout', $table->token) }}">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-lg w-100">
-                                <i class="bi bi-check-circle me-2"></i>Siparişi Ver
-                            </button>
-                        </form>
-                        
-                        <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-outline-primary">
-                            <i class="bi bi-plus-circle me-1"></i>Ürün Ekle
-                        </a>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button id="clearBtn" class="back-btn w-full inline-flex items-center justify-center gap-2" disabled>
+                    <i class="fa-solid fa-trash-can"></i> Temizle
+                </button>
+                <button id="callBtn"
+                    class="btn-secondary w-full inline-flex items-center justify-center gap-2 border-2 border-white/30">
+                    <i class="fa-solid fa-bell-concierge"></i> Garson Çağır
+                </button>
+                <button id="orderBtn" class="order-btn w-full inline-flex items-center justify-center gap-2" disabled>
+                    <i class="fa-solid fa-check"></i> Siparişi Tamamla
+                </button>
             </div>
-        </div>
-    @endif
-@endsection
+        </section>
+    </main>
 
-@section('scripts')
+    @include('layouts.partials.public-footer')
+
+    <div id="toast"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg hidden">
+        Siparişiniz başarıyla iletildi.</div>
+
     <script>
-        // Auto-hide alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                document.querySelectorAll('.alert').forEach(alert => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
+        // ===== Backend sabitleri =====
+        const TOKEN = @json($table->token);
+        const ROUTES = {
+            items: @json(route('customer.cart.items', ['token' => $table->token])),
+            add: @json(route('customer.cart.add', ['token' => $table->token])),
+            remove: @json(route('customer.cart.remove', ['token' => $table->token, 'productId' => '__ID__'])),
+            clear: @json(route('customer.cart.clear', ['token' => $table->token])),
+            checkout: @json(route('customer.checkout', ['token' => $table->token])),
+            call: @json(route('customer.call', ['token' => $table->token])),
+        };
+
+        function csrfHeader() {
+            const t = document.querySelector('meta[name="csrf-token"]').content;
+            return { 'X-CSRF-TOKEN': t, 'Accept': 'application/json', 'Content-Type': 'application/json' };
+        }
+
+        const cartList = document.getElementById('cartList');
+        const sumTotal = document.getElementById('sumTotal');
+        const clearBtn = document.getElementById('clearBtn');
+        const orderBtn = document.getElementById('orderBtn');
+
+        // Buton toggle
+        function toggleActionButtons(disabled) {
+            [clearBtn, orderBtn].forEach(btn => {
+                btn.disabled = disabled;
+                btn.classList.toggle('is-disabled', disabled);
+            });
+        }
+
+        // Listeyi doldur
+        async function loadCart() {
+            try {
+                const res = await fetch(ROUTES.items);
+                const data = await res.json();
+                renderCart(data.items || [], data.total || 0);
+            } catch (e) {
+                console.error(e);
+                renderCart([], 0);
+            }
+        }
+
+        function renderCart(items, total) {
+            cartList.innerHTML = '';
+            if (!items.length) {
+                cartList.innerHTML = `<div class="cart-card p-6 text-center text-gray-400">
+          Sepetiniz boş. Menüye dönerek ürün ekleyebilirsiniz.
+        </div>`;
+            } else {
+                items.forEach(it => {
+                    const row = document.createElement('div');
+                    row.className = 'cart-card p-3';
+                    row.innerHTML = `
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <h3 class="font-semibold">${it.name}</h3>
+                <p class="text-orange-500 font-bold">${Number(it.price).toFixed(2)} ₺</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="qty-btn minus">−</button>
+                <span class="px-2 font-bold">${it.quantity}</span>
+                <button class="qty-btn plus">+</button>
+              </div>
+            </div>
+          `;
+                    row.querySelector('.minus').addEventListener('click', () => changeQty(it.id, -1));
+                    row.querySelector('.plus').addEventListener('click', () => changeQty(it.id, +1));
+                    cartList.appendChild(row);
                 });
-            }, 5000);
+            }
+            toggleActionButtons(!(items && items.length));
+            sumTotal.textContent = (Number(total).toFixed(2)) + ' ₺';
+        }
+
+        async function changeQty(productId, delta) {
+            if (delta > 0) {
+                await fetch(ROUTES.add, {
+                    method: 'POST', headers: csrfHeader(),
+                    body: JSON.stringify({ product_id: productId, qty: 1 })
+                }).catch(() => { });
+            } else {
+                await fetch(ROUTES.remove.replace('__ID__', productId), {
+                    method: 'POST', headers: csrfHeader()
+                }).catch(() => { });
+            }
+            loadCart();
+        }
+
+        clearBtn.addEventListener('click', async () => {
+            if (clearBtn.disabled) return;
+            try {
+                await fetch(ROUTES.clear, { method: 'POST', headers: csrfHeader() });
+            } catch (_) { }
+            await loadCart();
         });
+
+        document.getElementById('callBtn').addEventListener('click', async () => {
+            await fetch(ROUTES.call, { method: 'POST', headers: csrfHeader() }).catch(() => { });
+            showToast('Garson çağrınız iletildi. Lütfen bekleyiniz.');
+        });
+
+        orderBtn.addEventListener('click', async () => {
+            if (orderBtn.disabled) return;
+            await fetch(ROUTES.checkout, {
+                method: 'POST', headers: csrfHeader(),
+                body: JSON.stringify({ confirm: true })
+            }).catch(() => null);
+            await loadCart();
+            showToast('Siparişiniz başarıyla iletildi.');
+        });
+
+        function showToast(message) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = message || 'İşlem başarılı';
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2000);
+        }
+
+        // İlk yükleme
+        loadCart();
     </script>
-@endsection
+</body>
+
+</html>

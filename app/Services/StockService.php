@@ -15,16 +15,17 @@ class StockService
      */
     public function updateStockAfterOrder(Order $order)
     {
-        foreach ($order->orderItems as $item) {
+        $order->load('items.product'); // ürünleri kesin yükle
+        foreach ($order->items as $item) {
             $product = $item->product;
-            
+
             if ($product) {
                 $success = $product->decreaseStock($item->quantity);
-                
+
                 if (!$success) {
                     Log::warning("Stok yetersiz: {$product->name} - Sipariş: {$order->id}");
                 }
-                
+
                 // Düşük stok kontrolü
                 if ($product->isLowStock()) {
                     $this->triggerLowStockAlert($product);
@@ -38,9 +39,9 @@ class StockService
      */
     public function restoreStockAfterCancellation(Order $order)
     {
-        foreach ($order->orderItems as $item) {
+        foreach ($order->items as $item) {
             $product = $item->product;
-            
+
             if ($product) {
                 $product->increaseStock($item->quantity);
                 Log::info("Stok geri yüklendi: {$product->name} - Miktar: {$item->quantity}");
@@ -54,7 +55,7 @@ class StockService
     public function triggerLowStockAlert(Product $product)
     {
         $cacheKey = "low_stock_alert_{$product->id}";
-        
+
         // Son 1 saatte aynı ürün için uyarı gönderilmişse tekrar gönderme
         if (Cache::has($cacheKey)) {
             return;
@@ -76,7 +77,7 @@ class StockService
     public function checkAllLowStockProducts()
     {
         $lowStockProducts = Product::getLowStockProducts();
-        
+
         foreach ($lowStockProducts as $product) {
             $this->triggerLowStockAlert($product);
         }
@@ -130,7 +131,7 @@ class StockService
 
         foreach ($lowStockProducts as $product) {
             $suggestedQuantity = max($product->min_stock_level * 2, 10); // Minimum stokun 2 katı veya en az 10 adet
-            
+
             $suggestions[] = [
                 'product_id' => $product->id,
                 'product_name' => $product->name,

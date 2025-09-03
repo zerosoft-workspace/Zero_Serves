@@ -35,17 +35,17 @@ class CustomerOrderController extends Controller
 
         // Handle different view types
         $view = request('view');
-        
+
         switch ($view) {
             case 'menu':
                 return view('customer.menu', compact('categories', 'table', 'orders'));
-            
+
             case 'cart':
                 return view('customer.cart', compact('categories', 'table', 'orders'));
-            
+
             case 'orders':
                 return view('customer.orders', compact('categories', 'table', 'orders'));
-            
+
             default:
                 // First visit or dashboard request - show dashboard
                 return view('customer.dashboard', compact('categories', 'table', 'orders'));
@@ -75,6 +75,16 @@ class CustomerOrderController extends Controller
         }
         session(['cart' => $cart]);
 
+        // Token'a özel sepeti de güncelle (cart:{$token}) -> cart.blade JSON endpoint'i bunu okuyor
+        $tokenCart = [];
+        foreach ($cart as $pid => $row) {
+            $tokenCart[] = [
+                'product_id' => $pid,
+                'qty' => (int)($row['qty'] ?? 1),
+            ];
+        }
+        session(["cart:{$token}" => $tokenCart]);
+
         return back()->with('success', 'Sepete eklendi');
     }
 
@@ -84,6 +94,16 @@ class CustomerOrderController extends Controller
         $cart = session('cart', []);
         unset($cart[$productId]);
         session(['cart' => $cart]);
+
+        // Token özel anahtarı da güncelle
+        $tokenCart = [];
+        foreach ($cart as $pid => $row) {
+            $tokenCart[] = [
+                'product_id' => $pid,
+                'qty' => (int)($row['qty'] ?? 1),
+            ];
+        }
+        session(["cart:{$token}" => $tokenCart]);
         return back();
     }
 
@@ -91,6 +111,9 @@ class CustomerOrderController extends Controller
     public function clearCart(string $token)
     {
         session()->forget('cart');
+        session()->forget("cart:{$token}");
+        // İsteğe bağlı: cache de temizle
+        try { \Illuminate\Support\Facades\Cache::forget("cart:{$token}"); } catch (\Throwable $e) {}
         return back();
     }
 
@@ -129,15 +152,16 @@ class CustomerOrderController extends Controller
                 'price' => $row['price'],
                 'line_total' => $row['price'] * $row['qty'],
             ]);
-            Product::find($pid)?->decrement('stock', $row['qty']);
+            Product::find($pid)?->decrement('stock_quantity', $row['qty']);
         }
 
         $table->update(['status' => 'occupied']);
-        
+
         // ✅ YENİ SİPARİŞ OLUŞTURULDUĞUNDA CACHE TEMİZLE
         $this->clearWaiterCache($table->id);
 
         session()->forget('cart');
+        session()->forget("cart:{$token}");
 
         return redirect()->route('customer.table.token', $token)
             ->with('success', 'Siparişiniz alındı! Garson onaylayacaktır.');
@@ -152,7 +176,7 @@ class CustomerOrderController extends Controller
             'table_id' => $table->id,
             'status' => 'new',
         ]);
-        
+
         // ✅ YENİ ÇAĞRI OLUŞTURULDUĞUNDA CACHE TEMİZLE
         $this->clearWaiterCache($table->id);
 
@@ -181,7 +205,7 @@ class CustomerOrderController extends Controller
 
         return back()->with('success', 'Ödeme isteğiniz alındı, garson yanınıza gelecek.');
     }
-    
+
     /**
      * Garson paneli cache'ini temizle
      */
@@ -190,7 +214,7 @@ class CustomerOrderController extends Controller
         try {
             // Spesifik masa cache'ini temizle
             Cache::forget("waiter_table_{$tableId}");
-            
+
             // Dashboard cache'lerini temizle
             $dashboardKeys = [
                 'waiter_dashboard_' . md5('_'),
@@ -199,11 +223,11 @@ class CustomerOrderController extends Controller
                 'waiter_dashboard_' . md5('delivered_'),
                 'waiter_dashboard_' . md5('paid_'),
             ];
-            
+
             foreach ($dashboardKeys as $key) {
                 Cache::forget($key);
             }
-            
+
             // Tüm dashboard cache'lerini temizlemek için pattern matching
             if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
                 $redis = Cache::getStore()->getRedis();
@@ -211,7 +235,7 @@ class CustomerOrderController extends Controller
                 if (!empty($keys)) {
                     $redis->del($keys);
                 }
-                
+
                 $callKeys = $redis->keys('*waiter_calls_*');
                 if (!empty($callKeys)) {
                     $redis->del($callKeys);
@@ -222,14 +246,14 @@ class CustomerOrderController extends Controller
                     'waiter_dashboard_*',
                     'waiter_calls_*'
                 ];
-                
+
                 foreach ($cacheKeys as $pattern) {
                     // File cache için manuel temizleme gerekebilir
                     Cache::flush(); // Son çare olarak tüm cache'i temizle
                     break;
                 }
             }
-            
+
         } catch (\Exception $e) {
             // Cache temizleme hatası durumunda log'la ama işlemi durdurma
             \Log::warning('Waiter cache temizleme hatası: ' . $e->getMessage());

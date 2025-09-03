@@ -1,314 +1,327 @@
-@extends('layouts.customer')
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SoftFood - Siparişlerim</title>
 
-@section('title', 'Siparişlerim')
-@section('table_name', $table->name)
+  {{-- Tailwind & Icons --}}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-@push('styles')
-    <style>
-        .order-card {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
+  {{-- Fonts --}}
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-        .order-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
+  {{-- Global theme (mevcut temanız) --}}
+  <link rel="stylesheet" href="{{ asset('css/public.css') }}">
 
-        .order-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-        }
+  {{-- CSRF --}}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        .order-body {
-            padding: 1.5rem;
-        }
+  <style>
+    .font-playfair{font-family:'Playfair Display',serif}
+    .font-inter{font-family:'Inter',sans-serif}
+    :root{--primary:#ff6b35;--primary-dark:#e55a2b;--bg-dark:#0a0a0a;--bg-card:#111214;--text:#fff;--text-muted:#a0a0a0;--border:rgba(255,255,255,.1)}
+    body{background:var(--bg-dark);color:var(--text);overflow-x:hidden}
+    .header{position:fixed;top:0;width:100%;background:rgba(0,0,0,.95);backdrop-filter:blur(15px);z-index:1000;padding:1rem 0;border-bottom:1px solid rgba(255,107,53,.2);box-shadow:0 4px 30px rgba(0,0,0,.3)}
+    .nav{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto;padding:0 20px}
+    .logo{font-size:1.8rem;font-weight:bold;color:#ff6b35;text-shadow:0 2px 4px rgba(0,0,0,.3);transition:.3s;text-decoration:none}
+    .logo:hover{transform:scale(1.05);color:#ff8c42}
+    .nav-menu{display:flex;list-style:none;gap:2.5rem;align-items:center;margin:0;padding:0}
+    .nav-menu a{color:#fff;text-decoration:none;transition:.3s cubic-bezier(.4,0,.2,1);position:relative;font-weight:500;letter-spacing:.5px}
+    .nav-menu a::after{content:"";position:absolute;bottom:-5px;left:50%;width:0;height:2px;background:linear-gradient(90deg,#ff6b35,#ff8c42);transition:.3s;transform:translateX(-50%)}
+    .nav-menu a:hover{color:#ff6b35;transform:translateY(-2px)}
+    .nav-menu a:hover::after,.nav-menu a.active::after{width:100%}
+    .nav-menu a.active{color:#ff6b35}
+    .mobile-menu-toggle{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:.5rem;border-radius:5px;transition:.3s}
+    .mobile-menu-toggle:hover{background:rgba(255,107,53,.2);color:#ff6b35}
 
-        .order-item {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f8f9fa;
-        }
+    .order-card{background:var(--bg-card);border-radius:16px;border:1px solid var(--border);overflow:hidden;transition:.3s;margin-bottom:1.5rem}
+    .order-card:hover{transform:translateY(-4px);border-color:rgba(255,107,53,.3);box-shadow:0 12px 30px rgba(0,0,0,.4)}
+    .order-header{background:linear-gradient(135deg,rgba(255,107,53,.1),rgba(255,140,66,.05));padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+    .status-badge{padding:.5rem 1rem;border-radius:20px;font-size:.875rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+    .status-pending{background:rgba(108,117,125,.2);color:#adb5bd}
+    .status-preparing{background:rgba(255,193,7,.18);color:#facc15}
+    .status-delivered{background:rgba(13,202,240,.18);color:#38bdf8}
+    .status-paid{background:rgba(25,135,84,.2);color:#22c55e}
 
-        .order-item:last-child {
-            border-bottom: none;
-        }
+    .order-item{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .order-item:last-child{border-bottom:none}
+    .order-item-image{width:60px;height:60px;object-fit:cover;border-radius:12px;margin-right:1rem;background:rgba(255,255,255,.05)}
 
-        .order-item-image {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 0.375rem;
-            margin-right: 1rem;
-        }
+    .order-timeline{position:relative;padding-left:2rem}
+    .order-timeline::before{content:"";position:absolute;left:.5rem;top:0;bottom:0;width:2px;background:rgba(255,255,255,.1)}
+    .timeline-item{position:relative;padding-bottom:1rem}
+    .timeline-item::before{content:"";position:absolute;left:-.5rem;top:.25rem;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.25);border:2px solid var(--bg-card)}
+    .timeline-item.active::before{background:#ff6b35;box-shadow:0 0 0 4px rgba(255,107,53,.2)}
+    .timeline-item.completed::before{background:#16a34a}
+    .summary-card{background:var(--bg-card);border-radius:16px;border:1px solid var(--border);position:sticky;top:100px}
+    .btn-primary{background:linear-gradient(135deg,#ff6b35,#ff8c42);border:none;padding:.75rem 1.5rem;border-radius:25px;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:.5rem;transition:.3s;letter-spacing:.5px;text-transform:uppercase}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(255,107,53,.4)}
+    .btn-secondary{background:transparent;border:2px solid rgba(255,255,255,.3);padding:.75rem 1.5rem;border-radius:25px;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:.5rem;transition:.3s;backdrop-filter:blur(10px)}
+    .btn-secondary:hover{border-color:#ff6b35;color:#ff6b35;transform:translateY(-2px);background:rgba(255,107,53,.08)}
+    .btn-dark{background:linear-gradient(135deg,#333,#555);border:none;padding:.75rem 1.5rem;border-radius:25px;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:.5rem;transition:.3s;width:100%;justify-content:center;letter-spacing:.5px;text-transform:uppercase}
+    .btn-dark:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.45)}
+    .empty-orders{text-align:center;padding:4rem 1.5rem;color:var(--text-muted)}
+    .empty-orders i{font-size:3rem;margin-bottom:1rem;color:#ff6b35;opacity:.8}
 
-        .status-badge {
-            font-size: 0.875rem;
-            padding: 0.375rem 0.75rem;
-            border-radius: 1rem;
-        }
+    .fade-in{opacity:0;transform:translateY(20px);transition:.6s}
+    .fade-in.visible{opacity:1;transform:translateY(0)}
+    .pulse{animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
-        .empty-orders {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #6c757d;
-        }
+    @media (max-width:768px){
+      .nav-menu{display:none;position:fixed;top:0;left:0;width:100%;height:100vh;background:rgba(0,0,0,.98);flex-direction:column;justify-content:center;align-items:center;gap:2rem;backdrop-filter:blur(10px);z-index:999}
+      .nav-menu.active{display:flex}
+      .nav-menu a{font-size:1.5rem;font-weight:300}
+      .mobile-menu-toggle{display:block;z-index:1001}
+      .summary-card{position:static;margin-top:2rem}
+      .order-item{flex-direction:column;align-items:flex-start;gap:.5rem}
+      .order-item-image{margin-right:0;margin-bottom:.5rem}
+    }
+  </style>
+</head>
 
-        .empty-orders i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
+<body class="font-inter">
+  {{-- Header --}}
+  <header class="header">
+    <nav class="nav">
+      <a href="{{ route('customer.table.token', ['token' => $table->token]) }}" class="logo">SoftFood</a>
 
-        .order-timeline {
-            position: relative;
-            padding-left: 2rem;
-        }
+      <ul id="navMenu" class="nav-menu">
+      
+        <li><a href="{{ route('customer.table.token', ['token' => $table->token, 'view'=>'dashboard']) }}">Menü</a></li>
+        <li><a href="{{ route('customer.cart.view', ['token' => $table->token]) }}">Sepetim</a></li>
+        <li><a href="{{ route('customer.table.token', ['token' => $table->token, 'view'=>'orders']) }}" class="active">Siparişlerim</a></li>
+      </ul>
 
-        .order-timeline::before {
-            content: '';
-            position: absolute;
-            left: 0.5rem;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #dee2e6;
-        }
+      <div class="text-sm text-gray-400 hidden sm:block">
+        <i class="fas fa-qrcode mr-2"></i>{{ $table->name ?? 'Masa' }}
+      </div>
 
-        .timeline-item {
-            position: relative;
-            padding-bottom: 1rem;
-        }
+      <button class="mobile-menu-toggle" id="mobileToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </nav>
+  </header>
 
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -0.5rem;
-            top: 0.25rem;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #dee2e6;
-        }
-
-        .timeline-item.active::before {
-            background: #0d6efd;
-        }
-
-        .timeline-item.completed::before {
-            background: #198754;
-        }
-    </style>
-@endpush
-
-@section('content')
-    {{-- Alerts --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    {{-- Navigation --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-clock-history me-2"></i>Siparişlerim</h2>
-        <div>
-            <a href="{{ route('customer.table.token', $table->token) }}" class="btn btn-outline-secondary me-2">
-                <i class="bi bi-house me-1"></i>Ana Sayfa
-            </a>
-            <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-primary">
-                <i class="bi bi-list-ul me-1"></i>Menü
-            </a>
-        </div>
+  {{-- Main --}}
+  <main class="container mx-auto px-4 py-6" style="margin-top:100px;">
+    {{-- Page Header --}}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div>
+        <h1 class="font-playfair text-3xl font-bold mb-2">
+          <i class="fas fa-clock-rotate-left mr-3 text-orange-500"></i>Siparişlerim
+        </h1>
+        <p class="text-gray-400">Siparişlerinizi ve durumlarını gerçek zamanlı takip edin</p>
+      </div>
+      <div class="flex gap-3">
+        
+        <a href="{{ route('customer.table.token', ['token'=>$table->token,'view'=>'dashboard']) }}" class="btn-primary">
+          <i class="fas fa-utensils"></i> Menü
+        </a>
+      </div>
     </div>
 
-    @if($orders->count() == 0)
-        <div class="empty-orders">
-            <i class="bi bi-clock-history"></i>
-            <h4>Henüz Siparişiniz Yok</h4>
-            <p class="mb-4">Menüden beğendiğiniz ürünleri seçerek sipariş verebilirsiniz.</p>
-            <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-primary btn-lg">
-                <i class="bi bi-list-ul me-2"></i>Menüyü Görüntüle
-            </a>
-        </div>
+    @if($orders->count() === 0)
+      {{-- Empty state --}}
+      <div class="empty-orders">
+        <i class="fas fa-clock-rotate-left"></i>
+        <h3 class="font-playfair text-2xl font-bold mb-2">Henüz Siparişiniz Yok</h3>
+        <p class="mb-6 text-gray-400">Menüden beğendiğiniz ürünleri seçerek sipariş verebilirsiniz.</p>
+        <a href="{{ route('customer.table.token', ['token'=>$table->token,'view'=>'dashboard']) }}" class="btn-primary text-base px-6 py-3">
+          <i class="fas fa-utensils mr-2"></i>Menüyü Görüntüle
+        </a>
+      </div>
     @else
-        <div class="row">
-            <div class="col-12 col-lg-8">
-                {{-- Orders List --}}
-                @foreach($orders as $order)
-                    <div class="order-card">
-                        <div class="order-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">Sipariş #{{ $order->id }}</h5>
-                                    <small class="text-muted">{{ $order->created_at->format('d.m.Y H:i') }}</small>
-                                </div>
-                                <span class="status-badge 
-                                    @if($order->status == 'pending') bg-secondary text-white
-                                    @elseif($order->status == 'preparing') bg-warning text-dark
-                                    @elseif($order->status == 'delivered') bg-info text-white
-                                    @elseif($order->status == 'paid') bg-success text-white
-                                    @endif">
-                                    @switch($order->status)
-                                        @case('pending') Bekliyor @break
-                                        @case('preparing') Hazırlanıyor @break
-                                        @case('delivered') Teslim Edildi @break
-                                        @case('paid') Ödendi @break
-                                        @default {{ ucfirst($order->status) }}
-                                    @endswitch
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="order-body">
-                            {{-- Order Items --}}
-                            <div class="mb-3">
-                                @foreach($order->items as $item)
-                                    <div class="order-item">
-                                        <div class="d-flex align-items-center flex-grow-1">
-                                            @if($item->product && !empty($item->product->image))
-                                                <img src="{{ asset($item->product->image) }}" class="order-item-image" alt="{{ $item->product->name }}">
-                                            @else
-                                                <div class="order-item-image bg-light d-flex align-items-center justify-content-center me-3">
-                                                    <i class="bi bi-image text-muted"></i>
-                                                </div>
-                                            @endif
-                                            <div>
-                                                <div class="fw-semibold">{{ $item->product ? $item->product->name : 'Ürün bulunamadı' }}</div>
-                                                <small class="text-muted">{{ $item->quantity }} x {{ number_format($item->price, 2) }} ₺</small>
-                                            </div>
-                                        </div>
-                                        <div class="fw-bold">{{ number_format($item->line_total, 2) }} ₺</div>
-                                    </div>
-                                @endforeach
-                            </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {{-- Orders List --}}
+        <div class="lg:col-span-2">
+          @foreach($orders as $order)
+            @php
+              $statusClass = [
+                'pending'   => 'status-badge status-pending',
+                'preparing' => 'status-badge status-preparing',
+                'delivered' => 'status-badge status-delivered',
+                'paid'      => 'status-badge status-paid',
+              ][$order->status] ?? 'status-badge status-pending';
+              $isCompleted = fn($s, $step) => [
+                 'pending'   => ['received'],
+                 'preparing' => ['received','preparing'],
+                 'delivered' => ['received','preparing','delivered'],
+                 'paid'      => ['received','preparing','delivered','paid'],
+              ][$s] ?? [];
+            @endphp
 
-                            {{-- Order Total --}}
-                            <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                <span class="fw-bold">Toplam</span>
-                                <span class="fw-bold fs-5 text-primary">{{ number_format($order->total_amount, 2) }} ₺</span>
-                            </div>
-
-                            {{-- Order Timeline --}}
-                            <div class="mt-3">
-                                <h6 class="mb-2">Sipariş Durumu</h6>
-                                <div class="order-timeline">
-                                    <div class="timeline-item {{ $order->status == 'pending' ? 'active' : ($order->status != 'pending' ? 'completed' : '') }}">
-                                        <strong>Sipariş Alındı</strong>
-                                        <div class="text-muted small">{{ $order->created_at->format('H:i') }}</div>
-                                    </div>
-                                    <div class="timeline-item {{ $order->status == 'preparing' ? 'active' : ($order->status == 'delivered' || $order->status == 'paid' ? 'completed' : '') }}">
-                                        <strong>Hazırlanıyor</strong>
-                                        @if($order->status != 'pending')
-                                            <div class="text-muted small">Mutfakta hazırlanıyor</div>
-                                        @endif
-                                    </div>
-                                    <div class="timeline-item {{ $order->status == 'delivered' ? 'active' : ($order->status == 'paid' ? 'completed' : '') }}">
-                                        <strong>Teslim Edildi</strong>
-                                        @if($order->status == 'delivered' || $order->status == 'paid')
-                                            <div class="text-muted small">Masanıza teslim edildi</div>
-                                        @endif
-                                    </div>
-                                    <div class="timeline-item {{ $order->status == 'paid' ? 'completed' : '' }}">
-                                        <strong>Ödendi</strong>
-                                        @if($order->status == 'paid')
-                                            <div class="text-muted small">Ödeme tamamlandı</div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="col-12 col-lg-4">
-                {{-- Order Summary --}}
-                <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Sipariş Özeti</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Toplam Sipariş:</span>
-                            <span class="fw-bold">{{ $orders->count() }}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Bekleyen:</span>
-                            <span class="badge bg-secondary">{{ $orders->where('status', 'pending')->count() }}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Hazırlanan:</span>
-                            <span class="badge bg-warning text-dark">{{ $orders->where('status', 'preparing')->count() }}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Teslim Edilen:</span>
-                            <span class="badge bg-info">{{ $orders->where('status', 'delivered')->count() }}</span>
-                        </div>
-
-                        <hr>
-
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="fw-bold">Toplam Tutar:</span>
-                            <span class="fw-bold fs-5 text-primary">{{ number_format($orders->sum('total_amount'), 2) }} ₺</span>
-                        </div>
-
-                        @if($orders->whereIn('status', ['delivered'])->count() > 0)
-                            <div class="d-grid gap-2">
-                                <form method="POST" action="{{ route('customer.pay', $table->token) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn-dark w-100">
-                                        <i class="bi bi-credit-card me-2"></i>Hesabı Öde
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-
-                        <div class="d-grid gap-2 mt-2">
-                            <a href="{{ route('customer.table.token', $table->token) }}?view=menu" class="btn btn-outline-primary">
-                                <i class="bi bi-plus-circle me-1"></i>Yeni Sipariş Ver
-                            </a>
-                        </div>
-                    </div>
+            <div class="order-card fade-in">
+              <div class="order-header">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h3 class="font-playfair text-xl font-bold mb-1">Sipariş #{{ $order->id }}</h3>
+                    <p class="text-gray-400 text-sm">{{ $order->created_at->format('d.m.Y H:i') }}</p>
+                  </div>
+                  <span class="{{ $statusClass }}">
+                    @switch($order->status)
+                      @case('pending')   <i class="fas fa-hourglass-half mr-1"></i> Bekliyor @break
+                      @case('preparing') <i class="fas fa-clock mr-1"></i> Hazırlanıyor @break
+                      @case('delivered') <i class="fas fa-check-circle mr-1"></i> Teslim Edildi @break
+                      @case('paid')      <i class="fas fa-badge-check mr-1"></i> Ödendi @break
+                      @default {{ ucfirst($order->status) }}
+                    @endswitch
+                  </span>
                 </div>
-            </div>
+              </div>
+
+              <div class="p-6">
+                {{-- Items --}}
+                <div class="mb-6">
+                  @foreach($order->items as $item)
+    <div class="order-item">
+      <div class="flex items-center justify-between w-full gap-3">
+        <!-- Sol: ürün adı + adet x birim fiyat -->
+        <div class="flex items-center gap-3 flex-1">
+          <h4 class="font-semibold text-white">
+            {{ $item->product->name ?? 'Ürün bulunamadı' }}
+          </h4>
+          <span class="text-sm text-gray-400">
+            {{ $item->quantity }} × {{ number_format($item->price,2) }} ₺
+          </span>
         </div>
+
+        <!-- Sağ: satır toplamı -->
+        <div class="text-right whitespace-nowrap">
+          <span class="font-bold text-orange-500">
+            {{ number_format($item->line_total,2) }} ₺
+          </span>
+        </div>
+      </div>
+    </div>
+  @endforeach
+                </div>
+
+                {{-- Total --}}
+                <div class="flex justify-between items-center p-4 bg-gray-800 rounded-lg mb-6">
+                  <span class="font-bold text-lg">Toplam</span>
+                  <span class="font-bold text-xl text-orange-500">{{ number_format($order->total_amount,2) }} ₺</span>
+                </div>
+
+                {{-- Timeline --}}
+                <div class="mt-2">
+                  <h5 class="font-semibold mb-3">Sipariş Durumu</h5>
+                  <div class="order-timeline">
+                    <div class="timeline-item {{ in_array('received',$isCompleted($order->status,'received')) ? ($order->status==='pending'?'active':'completed') : '' }}">
+                      <div class="font-semibold {{ $order->status==='pending'?'text-white':'text-white' }}">Sipariş Alındı</div>
+                      <div class="text-sm text-gray-400">{{ $order->created_at->format('H:i') }}</div>
+                    </div>
+                    <div class="timeline-item {{ in_array('preparing',$isCompleted($order->status,'preparing')) ? ($order->status==='preparing'?'active':'completed') : '' }}">
+                      <div class="font-semibold {{ $order->status==='preparing'?'text-white':'text-white' }}">Hazırlanıyor</div>
+                      @if($order->status!=='pending')
+                        <div class="text-sm {{ $order->status==='preparing'?'text-yellow-400':'text-gray-400' }}">
+                          <i class="fas fa-utensils mr-1"></i> Mutfakta hazırlanıyor
+                        </div>
+                      @endif
+                    </div>
+                    <div class="timeline-item {{ in_array('delivered',$isCompleted($order->status,'delivered')) ? ($order->status==='delivered'?'active':'completed') : '' }}">
+                      <div class="font-semibold {{ in_array($order->status,['delivered','paid'])?'text-white':'text-gray-400' }}">Teslim Edildi</div>
+                      @if(in_array($order->status,['delivered','paid']))
+                        <div class="text-sm text-gray-400">Masanıza teslim edildi</div>
+                      @endif
+                    </div>
+                    <div class="timeline-item {{ in_array('paid',$isCompleted($order->status,'paid')) ? 'completed' : '' }}">
+                      <div class="font-semibold {{ $order->status==='paid'?'text-white':'text-gray-400' }}">Ödendi</div>
+                      @if($order->status==='paid')
+                        <div class="text-sm text-gray-400">Ödeme tamamlandı</div>
+                      @endif
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+
+        {{-- Summary --}}
+        <aside class="lg:col-span-1">
+          <div class="summary-card">
+            <div class="p-6 border-b border-gray-700">
+              <h4 class="font-playfair text-xl font-bold flex items-center">
+                <i class="fas fa-receipt mr-3 text-orange-500"></i>Sipariş Özeti
+              </h4>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4 mb-6">
+                <div class="flex justify-between">
+                  <span class="text-gray-300">Toplam Sipariş:</span>
+                  <span class="font-bold text-white">{{ $orders->count() }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-300">Bekleyen:</span>
+                  <span class="px-2 py-1 bg-gray-600 text-gray-200 rounded-full text-sm">{{ $orders->where('status','pending')->count() }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-300">Hazırlanan:</span>
+                  <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm">{{ $orders->where('status','preparing')->count() }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-300">Teslim Edilen:</span>
+                  <span class="px-2 py-1 bg-sky-500/20 text-sky-400 rounded-full text-sm">{{ $orders->where('status','delivered')->count() }}</span>
+                </div>
+              </div>
+
+              <div class="border-t border-gray-700 pt-4 mb-6">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-lg">Toplam Tutar:</span>
+                  <span class="font-bold text-2xl text-orange-500">{{ number_format($orders->sum('total_amount'),2) }} ₺</span>
+                </div>
+              </div>
+
+              @if($orders->whereIn('status',['delivered'])->count() > 0)
+                <form method="POST" action="{{ route('customer.pay', $table->token) }}" class="space-y-3">
+                  @csrf
+                  <button type="submit" class="btn-dark">
+                    <i class="fas fa-credit-card mr-2"></i>Hesabı Öde
+                  </button>
+                </form>
+              @endif
+
+              <div class="mt-3">
+                <a href="{{ route('customer.table.token', ['token'=>$table->token,'view'=>'menu']) }}" class="btn-primary w-full justify-center">
+                  <i class="fas fa-plus-circle mr-2"></i>Yeni Sipariş Ver
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     @endif
-@endsection
+  </main>
 
-@section('scripts')
-    <script>
-        // Auto-hide alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                document.querySelectorAll('.alert').forEach(alert => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                });
-            }, 5000);
+  {{-- Alerts (Laravel flash) --}}
+  @if(session('success') || session('error'))
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[1100]">
+      <div class="px-4 py-3 rounded-xl border
+        @if(session('success')) bg-green-600/20 border-green-500 text-green-200
+        @else bg-red-600/20 border-red-500 text-red-200 @endif">
+        {{ session('success') ?? session('error') }}
+      </div>
+    </div>
+  @endif
 
-            // Auto refresh every 30 seconds to update order status
-            setInterval(() => {
-                if (document.visibilityState === 'visible') {
-                    window.location.reload();
-                }
-            }, 30000);
-        });
-    </script>
-@endsection
+  <script>
+    // Mobile menu
+    const mobileToggle = document.getElementById('mobileToggle');
+    const navMenu = document.getElementById('navMenu');
+    mobileToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+    document.querySelectorAll('#navMenu a').forEach(a => a.addEventListener('click', ()=>navMenu.classList.remove('active')));
+
+    // Fade-in on view
+    (function observeFadeIns(){
+      const io = new IntersectionObserver(es => es.forEach(en => en.isIntersecting && en.target.classList.add('visible')),
+        {threshold:0.1, rootMargin:'0px 0px -50px 0px'});
+      document.querySelectorAll('.fade-in').forEach(el=>io.observe(el));
+    })();
+
+    // Auto-refresh (navbar -> Siparişlerim tıklandığında açılma zaten active)
+    setInterval(()=>{ if(document.visibilityState==='visible'){ window.location.reload(); } }, 30000);
+  </script>
+</body>
+</html>

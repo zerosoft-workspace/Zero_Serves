@@ -20,6 +20,7 @@ use App\Http\Controllers\PublicMenuController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\CustomerCartController;
 
 /*
 |--------------------------------------------------------------------------
@@ -172,6 +173,11 @@ Route::post('/table/{token}/cart/clear', [CustomerOrderController::class, 'clear
 Route::post('/table/{token}/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
 Route::post('/table/{token}/call-waiter', [CustomerOrderController::class, 'callWaiter'])->name('customer.call');
 Route::post('/table/{token}/pay', [CustomerOrderController::class, 'pay'])->name('customer.pay');
+
+Route::get('/table/{token}/cart', [\App\Http\Controllers\CustomerCartController::class, 'view'])
+    ->name('customer.cart.view');
+Route::get('/table/{token}/cart/items', [\App\Http\Controllers\CustomerCartController::class, 'items'])
+    ->name('customer.cart.items');
 
 /*
 |--------------------------------------------------------------------------
