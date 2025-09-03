@@ -84,6 +84,18 @@
             color: #ff6b35
         }
 
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: .5rem;
+            border-radius: 5px;
+            transition: .3s
+        }
+
         .order-btn {
             background: linear-gradient(135deg, #22c55e, #16a34a);
             padding: 14px 26px;
@@ -156,6 +168,21 @@
             .nav-menu {
                 display: none
             }
+            .nav-menu.active {
+                display: flex;
+                position: absolute;
+                top: 64px;
+                right: 16px;
+                left: 16px;
+                background: rgba(0,0,0,.95);
+                border: 1px solid rgba(255,255,255,.1);
+                border-radius: 12px;
+                padding: 12px;
+                flex-direction: column;
+                gap: 12px;
+                z-index: 1100;
+            }
+            .mobile-menu-toggle { display: block }
         }
     </style>
 </head>
@@ -166,7 +193,7 @@
     <header class="header">
         <nav class="nav">
             <a href="#" class="logo">SoftFood</a>
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="navMenu">
                 <li><a
                         href="{{ route('customer.table.token', ['token' => $table->token, 'view' => 'dashboard']) }}">Menü</a>
                 </li>
@@ -179,6 +206,9 @@
                 <i class="fas fa-qrcode"></i>
                 {{ $table->name ?? 'Dijital Menü' }}
             </div>
+            <button class="mobile-menu-toggle" id="mobileToggle" aria-label="Menüyü Aç/Kapat">
+                <i class="fas fa-bars"></i>
+            </button>
         </nav>
     </header>
 
@@ -346,6 +376,16 @@
             t.classList.remove('hidden');
             setTimeout(() => t.classList.add('hidden'), 2000);
         }
+
+        // Mobil menü toggle
+        (function(){
+            const toggle = document.getElementById('mobileToggle');
+            const menu = document.getElementById('navMenu');
+            if (toggle && menu) {
+                toggle.addEventListener('click', ()=> menu.classList.toggle('active'));
+                menu.querySelectorAll('a').forEach(a=> a.addEventListener('click', ()=> menu.classList.remove('active')));
+            }
+        })();
 
         // İlk yükleme
         loadCart();
