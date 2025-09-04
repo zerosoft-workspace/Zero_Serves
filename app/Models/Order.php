@@ -23,7 +23,7 @@ class Order extends Model
         self::STATUS_CANCELED,
         self::STATUS_REFUNDED,
     ];
-    protected $fillable = ['table_id', 'status', 'payment_status', 'total_amount'];
+    protected $fillable = ['table_id', 'customer_name', 'status', 'payment_status', 'total_amount'];
 
     protected static array $TRANSITIONS = [
         'waiter' => [

@@ -164,6 +164,15 @@
             margin-top: auto;
         }
 
+        /* İsim modalı */
+        .name-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:2000;padding:16px}
+        .name-modal.active{display:flex}
+        .name-card{background:#111214;border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:20px}
+        .name-card h3{font-weight:700;margin-bottom:8px}
+        .name-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:#fff}
+        .name-actions{display:flex;gap:10px;margin-top:12px}
+        .btn-light{background:rgba(255,255,255,.12);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+
         @media (max-width:768px) {
             .nav-menu {
                 display: none
@@ -257,6 +266,19 @@
     <div id="toast"
         class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg hidden">
         Siparişiniz başarıyla iletildi.</div>
+
+    {{-- İsim Modalı --}}
+    <div id="nameModal" class="name-modal" aria-modal="true" role="dialog">
+        <div class="name-card">
+            <h3 class="font-playfair text-xl">Sipariş için adınızı giriniz</h3>
+            <p class="text-gray-400 text-sm mb-3">Hazırlık ve servis için isminize ihtiyaç duyuyoruz.</p>
+            <input id="nameInput" type="text" class="name-input" placeholder="Örn: Mehmet" maxlength="100">
+            <div class="name-actions">
+                <button id="nameCancel" class="btn-light flex-1">İptal</button>
+                <button id="nameConfirm" class="add-btn flex-1 justify-center">Devam Et</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ===== Backend sabitleri =====
@@ -359,11 +381,49 @@
             showToast('Garson çağrınız iletildi. Lütfen bekleyiniz.');
         });
 
+        // İsim modal yardımcıları
+        function openNameModal(resolve) {
+            const modal = document.getElementById('nameModal');
+            const input = document.getElementById('nameInput');
+            modal.classList.add('active');
+            input.value = (localStorage.getItem('customer_name') || '').trim();
+            input.focus();
+            const confirmBtn = document.getElementById('nameConfirm');
+            const cancelBtn = document.getElementById('nameCancel');
+            function cleanup() {
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                modal.removeEventListener('click', onBackdrop);
+            }
+            function onConfirm() {
+                const name = (input.value || '').trim();
+                if (name.length < 2) { input.focus(); input.select(); return; }
+                localStorage.setItem('customer_name', name);
+                modal.classList.remove('active');
+                cleanup();
+                resolve(name);
+            }
+            function onCancel() { modal.classList.remove('active'); cleanup(); resolve(null); }
+            function onBackdrop(e){ if(e.target === modal){ onCancel(); } }
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            modal.addEventListener('click', onBackdrop);
+        }
+
+        function askName() {
+            // Her sipariş verişte modal açılsın, varsa isim önceden doldurulsun
+            return new Promise((resolve) => {
+                openNameModal(resolve);
+            });
+        }
+
         orderBtn.addEventListener('click', async () => {
             if (orderBtn.disabled) return;
+            const name = await askName();
+            if (!name) return;
             await fetch(ROUTES.checkout, {
                 method: 'POST', headers: csrfHeader(),
-                body: JSON.stringify({ confirm: true })
+                body: JSON.stringify({ customer_name: name, confirm: true })
             }).catch(() => null);
             await loadCart();
             showToast('Siparişiniz başarıyla iletildi.');

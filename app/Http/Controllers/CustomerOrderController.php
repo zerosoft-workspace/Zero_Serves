@@ -180,6 +180,12 @@ class CustomerOrderController extends Controller
     {
         $table = Table::where('token', $token)->firstOrFail();
         $cart = session('cart', []);
+
+        // Require customer_name
+        $request->validate([
+            'customer_name' => 'required|string|min:2|max:100',
+        ]);
+        $customerName = trim($request->input('customer_name'));
         if (empty($cart))
             return back()->with('error', 'Sepetiniz boş');
 
@@ -197,6 +203,7 @@ class CustomerOrderController extends Controller
 
         $order = Order::create([
             'table_id' => $table->id,
+            'customer_name' => $customerName,
             'status' => 'pending',
             'payment_status' => 'unpaid',
             'total_amount' => $total,

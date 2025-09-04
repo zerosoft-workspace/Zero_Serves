@@ -143,8 +143,8 @@
                 {{-- Sipariş Bilgileri --}}
                 <div class="small text-muted mb-2">
                   <div class="d-flex align-items-center mb-1">
-                    <i class="bi bi-receipt me-1"></i>
-                    <span>Sipariş #{{ $order->id }}</span>
+                    <i class="bi bi-person-badge me-1"></i>
+                    <span class="fw-semibold">{{ $order->customer_name ?? ('Sipariş #' . $order->id) }}</span>
                   </div>
                   <div class="d-flex align-items-center mb-1">
                     <i class="bi bi-clock me-1"></i>

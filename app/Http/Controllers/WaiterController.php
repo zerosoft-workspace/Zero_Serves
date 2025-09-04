@@ -52,7 +52,7 @@ class WaiterController extends Controller
                 ->where('waiter_id', $user->id)
                 ->with([
                     'active_order' => function ($q) {
-                        $q->select(['id', 'table_id', 'status', 'total_amount', 'created_at'])
+                        $q->select(['id', 'table_id', 'status', 'total_amount', 'customer_name', 'created_at'])
                             ->whereNotIn('status', ['paid', 'canceled']);
                     }
                 ]);
@@ -115,19 +115,21 @@ class WaiterController extends Controller
         }
 
         $data = (function () use ($table) {
-            // Mevcut sipariş (ödenmemiş) - optimize edilmiş eager loading
-            $currentOrder = Order::query()
-                ->select(['id', 'table_id', 'status', 'total_amount', 'created_at', 'updated_at'])
+            // Aktif tüm siparişler (ödenmemiş) - en yenisi ilk
+            $activeOrders = Order::query()
+                ->select(['id', 'table_id', 'status', 'total_amount', 'customer_name', 'created_at', 'updated_at'])
                 ->where('table_id', $table->id)
                 ->whereNotIn('status', ['paid', 'canceled'])
-                ->latest('id')
+                ->orderByDesc('id')
                 ->with([
                     'items' => function ($q) {
                         $q->select(['id', 'order_id', 'product_id', 'quantity', 'price', 'line_total']);
                     },
                     'items.product:id,name,price'
                 ])
-                ->first();
+                ->get();
+
+            $currentOrder = $activeOrders->first();
 
             // Geçmiş siparişler (ödenmiş) - optimize edilmiş
             $pastOrders = Order::query()
@@ -144,17 +146,19 @@ class WaiterController extends Controller
                 ->limit(10)
                 ->get();
 
-            return compact('table', 'currentOrder', 'pastOrders');
+            return compact('table', 'currentOrder', 'activeOrders', 'pastOrders');
         })();
 
         $table = $data['table'];
         $currentOrder = $data['currentOrder'];
+        $activeOrders = $data['activeOrders'];
         $pastOrders = $data['pastOrders'];
 
         return view('waiter.table', [
             'table' => $table,
             'order' => $currentOrder,
             'currentOrder' => $currentOrder,
+            'activeOrders' => $activeOrders,
             'pastOrders' => $pastOrders,
         ]);
     }

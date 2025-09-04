@@ -857,6 +857,17 @@ footer, .footer, #public-footer { color:#111 !important; }
             </div>
         </div>
     </div>
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <h3 class="font-playfair text-xl font-bold mb-2">Sipariş için adınızı giriniz</h3>
+            <p class="text-gray-400 text-sm mb-3">Aynı masada birden fazla kişi sipariş verebilir. Hazırlık ve servis için isminize ihtiyaç duyuyoruz.</p>
+            <input id="nameInput" type="text" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 mb-3" placeholder="Örn: Mehmet" maxlength="100" />
+            <div class="grid grid-cols-2 gap-3">
+                <button id="nameCancel" class="back-btn justify-center">İptal</button>
+                <button id="nameConfirm" class="add-btn justify-center">Devam Et</button>
+            </div>
+        </div>
+    </div>
 
     {{-- Toast --}}
     <div id="toast"
@@ -966,9 +977,48 @@ footer, .footer, #public-footer { color:#111 !important; }
             await fetch(ROUTES.clear, { method: 'POST', headers: csrfHeader() }).catch(() => { });
             await loadCartFromServer(); updateCartUI(); cartModal.classList.remove('active');
         }
+        function openNameModal(resolve) {
+            const modal = document.getElementById('nameModal');
+            const input = document.getElementById('nameInput');
+            if (!modal || !input) { return resolve(null); }
+            modal.classList.add('active');
+            try{ input.value = (localStorage.getItem('customer_name') || '').trim(); }catch(_){ input.value=''; }
+            input.focus();
+            const confirmBtn = document.getElementById('nameConfirm');
+            const cancelBtn = document.getElementById('nameCancel');
+            function cleanup(){
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                modal.removeEventListener('click', onBackdrop);
+            }
+            function onConfirm(){
+                const name = (input.value || '').trim();
+                if (name.length < 2){ input.focus(); input.select(); return; }
+                try{ localStorage.setItem('customer_name', name); }catch(_){}
+                modal.classList.remove('active'); cleanup(); resolve(name);
+            }
+            function onCancel(){ modal.classList.remove('active'); cleanup(); resolve(null); }
+            function onBackdrop(e){ if(e.target === modal){ onCancel(); } }
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            modal.addEventListener('click', onBackdrop);
+        }
+
+        function askName(){
+            // Her siparişte modal açılsın, varsa isim önceden doldurulsun
+            return new Promise((resolve)=>{
+                openNameModal(resolve);
+            });
+        }
+
         async function checkout() {
             if (cart.length === 0) return;
-            const payload = { items: cart.map(i => ({ product_id: i.id, quantity: i.quantity })) };
+            const name = await askName();
+            if (!name) return;
+            const payload = { 
+                customer_name: name,
+                items: cart.map(i => ({ product_id: i.id, quantity: i.quantity })) 
+            };
             await fetch(ROUTES.checkout, { method: 'POST', headers: csrfHeader(), body: JSON.stringify(payload) }).catch(() => { });
             await loadCartFromServer(); cart = []; updateCartUI(); cartModal.classList.remove('active'); showToast('Siparişiniz başarıyla iletildi.');
         }

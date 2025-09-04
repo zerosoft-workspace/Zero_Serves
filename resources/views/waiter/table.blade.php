@@ -38,6 +38,43 @@
         </div>
     </div>
 
+    {{-- Aktif siparişler (birden fazla kişi olabilir) --}}
+    @if(isset($activeOrders) && $activeOrders->count() > 1)
+        <div class="row g-3 mb-4">
+            @foreach($activeOrders as $ao)
+                <div class="col-12 col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-badge"></i>
+                                <div>
+                                    <div class="fw-semibold">{{ $ao->customer_name ?? ('Sipariş #' . $ao->id) }}</div>
+                                    <small class="text-muted d-block">{{ $ao->created_at->format('d.m.Y H:i') }}</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-outline-dark text-dark">{{ strtoupper($ao->status) }}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                @foreach($ao->items as $item)
+                                    <div class="list-group-item px-0 py-2 border-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-semibold">{{ $item->product->name ?? 'Ürün' }}</div>
+                                                <small class="text-muted">{{ $item->quantity }} adet</small>
+                                            </div>
+                                            <span class="fw-semibold">{{ number_format($item->line_total ?? (($item->price ?? 0) * ($item->quantity ?? 0)), 2) }} ₺</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Mevcut Sipariş --}}
     @if(!$currentOrder)
         <div class="text-center py-5">
@@ -58,7 +95,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-receipt fs-5"></i>
                         <div>
-                            <h5 class="mb-0">Sipariş #{{ $currentOrder->id }}</h5>
+                            <h5 class="mb-0">{{ $currentOrder->customer_name ?? ('Sipariş #' . $currentOrder->id) }}</h5>
                             <small class="opacity-75">{{ $currentOrder->created_at->format('d.m.Y H:i') }}</small>
                         </div>
                     </div>
