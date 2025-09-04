@@ -150,10 +150,13 @@
                     <i class="bi bi-clock me-1"></i>
                     <span>{{ $order->created_at->diffForHumans() }}</span>
                   </div>
+                  @php $sum = $table->active_total_amount ?? 0; @endphp
+                  @if($sum > 0)
                   <div class="d-flex align-items-center">
                     <i class="bi bi-currency-exchange me-1"></i>
-                    <span class="fw-semibold">{{ number_format($order->total_amount, 2) }} ₺</span>
+                    <span class="fw-semibold">Toplam: {{ number_format($sum, 2) }} ₺</span>
                   </div>
+                  @endif
                 </div>
                 
               @else
@@ -188,4 +191,110 @@
       <p class="text-muted">Henüz hiç masa eklenmemiş veya filtreleme kriterlerinize uygun masa yok.</p>
     </div>
   @endif
+
+{{-- Tüm Aktif Siparişler (tek tablo) --}}
+@if(isset($activeOrders) && $activeOrders->count())
+  @php
+    $statusMap = [
+      'pending'   => 'Bekliyor',
+      'preparing' => 'Hazırlanıyor',
+      'ready'     => 'Hazır',
+      'delivered' => 'Teslim Edildi',
+      'paid'      => 'Ödendi',
+      'canceled'  => 'İptal',
+      'refunded'  => 'İade',
+    ];
+    $statusBadge = [
+      'pending'   => 'secondary',
+      'preparing' => 'warning text-dark',
+      'ready'     => 'info',
+      'delivered' => 'success',
+      'paid'      => 'primary',
+      'canceled'  => 'danger',
+      'refunded'  => 'dark',
+    ];
+    $statusIcon = [
+      'pending'   => 'clock',
+      'preparing' => 'hourglass-split',
+      'ready'     => 'check2-circle',
+      'delivered' => 'truck',
+      'paid'      => 'credit-card',
+      'canceled'  => 'x-circle',
+      'refunded'  => 'arrow-counterclockwise',
+    ];
+  @endphp
+
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-light border-0">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-list-ul text-muted"></i>
+        <h5 class="mb-0 fw-semibold">Aktif Siparişler</h5>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 14rem">Masa</th>
+              <th>Ürün</th>
+              <th class="text-center" style="width: 7rem">Adet</th>
+              <th class="text-end" style="width: 10rem">Tutar</th>
+              <th style="width: 14rem">Siparişi Veren</th>
+              <th style="width: 12rem">Durum</th>
+              <th class="d-none d-md-table-cell" style="width: 8rem">Saat</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($activeOrders as $o)
+              @foreach($o->items as $it)
+                @php
+                  $st = (string)($o->status ?? 'pending');
+                  $badgeClass = $statusBadge[$st] ?? 'secondary';
+                  $label = $statusMap[$st] ?? strtoupper($st);
+                  $icon  = $statusIcon[$st] ?? 'question-circle';
+                @endphp
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge bg-secondary-subtle text-secondary">#{{ $o->table?->id }}</span>
+                      <span class="fw-semibold text-truncate" style="max-width: 10rem;">
+                        {{ $o->table?->name }}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="fw-semibold text-truncate" style="max-width: 18rem;">
+                      {{ $it->product->name ?? 'Ürün' }}
+                    </div>
+                  </td>
+                  <td class="text-center">{{ $it->quantity }}</td>
+                  <td class="text-end">
+                    {{ number_format($it->line_total ?? (($it->price ?? 0) * ($it->quantity ?? 0)), 2, ',', '.') }} ₺
+                  </td>
+                  <td>
+                    <span class="badge bg-dark-subtle text-dark">
+                      {{ $o->customer_name ?? '—' }}
+                    </span>
+                  </td>
+                  <td class="text-nowrap">
+                    <span class="badge d-inline-flex align-items-center gap-1 px-3 py-2 bg-{{ $badgeClass }}">
+                      <i class="bi bi-{{ $icon }}"></i>
+                      <span class="d-none d-sm-inline">{{ $label }}</span>
+                    </span>
+                  </td>
+                  <td class="d-none d-md-table-cell">
+                    {{ $o->created_at->format('H:i') }}
+                  </td>
+                </tr>
+              @endforeach
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+@endif
+
 @endsection

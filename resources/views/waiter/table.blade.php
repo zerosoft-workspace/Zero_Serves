@@ -1,440 +1,460 @@
+{{-- resources/views/waiter/table.blade.php --}}
 @extends('layouts.waiter')
 
-@section('title', $table->name ?? 'Masa Detayı')
+@section('title', 'Masa Yönetimi')
 
-@section('header_actions')
-    <div class="d-flex gap-2">
-        <a href="{{ route('waiter.dashboard') }}" class="btn btn-sm btn-ghost">
-            <i class="bi bi-arrow-left me-1"></i> 
-            <span class="d-none d-sm-inline">Masalar</span>
-        </a>
-        <button onclick="location.reload()" class="btn btn-sm btn-ghost">
-            <i class="bi bi-arrow-clockwise me-1"></i>
-            <span class="d-none d-sm-inline">Yenile</span>
-        </button>
-    </div>
-@endsection
+@push('styles')
+    <style>
+        .order-row {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .order-row:hover {
+            background-color: #f8f9fa !important;
+        }
+
+        .order-row.table-primary {
+            background-color: #cce7ff !important;
+            border-left-color: #007bff;
+        }
+
+        .status-pending {
+            border-left-color: #6c757d;
+        }
+
+        .status-preparing {
+            border-left-color: #ffc107;
+        }
+
+        .status-delivered {
+            border-left-color: #28a745;
+        }
+
+        .status-paid {
+            border-left-color: #28a745;
+        }
+
+        .status-canceled {
+            border-left-color: #dc3545;
+        }
+
+        .action-panel {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            border-top: 2px solid #e9ecef;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .btn-action {
+            min-height: 45px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .selected-count {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
+        }
+
+        .table-summary {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .table thead th {
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .btn-action {
+                font-size: 14px;
+                padding: 12px;
+            }
+
+            .action-panel {
+                padding: 15px 10px;
+            }
+
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+@endpush
 
 @section('content')
-    @php
-        $statusMap = [
-            'pending' => 'Sipariş Bekliyor',
-            'preparing' => 'Hazırlanıyor',
-            'delivered' => 'Teslim Edildi',
-            'paid' => 'Ödendi',
-        ];
-    @endphp
-
-    {{-- Masa Başlığı --}}
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div class="d-flex align-items-center gap-3">
-            <div class="p-3 bg-primary bg-gradient rounded-circle text-white">
-                <i class="bi bi-table fs-4"></i>
-            </div>
-            <div>
-                <h2 class="mb-0 fw-bold">{{ $table->name }}</h2>
-                <p class="text-muted mb-0">Masa Yönetimi</p>
+    <div class="container-fluid py-3">
+        {{-- Masa Bilgisi ve Özet --}}
+        <div class="table-summary">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="mb-1 fw-bold">
+                        <i class="bi bi-table me-2"></i>
+                        {{ $table->name ?? ('#' . $table->id) }}
+                    </h4>
+                    <p class="text-muted mb-0 small">Aktif sipariş yönetimi</p>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-4">
+                            <div class="text-center">
+                                <div class="fs-4 fw-bold text-primary">{{ $flatItems->count() ?? 0 }}</div>
+                                <small class="text-muted">Toplam Kalem</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="text-center">
+                                <div class="fs-4 fw-bold text-success">{{ number_format(($flatTotal ?? 0), 2, ',', '.') }} ₺
+                                </div>
+                                <small class="text-muted">Genel Toplam</small>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-center">
+                                <span id="selectedCount" class="selected-count">0 Seçili</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        {{-- Tümünü Seç Butonu --}}
+        @if(($flatItems ?? collect())->count())
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input custom-checkbox" type="checkbox" id="selectAll">
+                    <label class="form-check-label fw-semibold" for="selectAll">
+                        Tümünü Seç
+                    </label>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="selectByStatus('pending')">
+                        <i class="bi bi-clock me-1"></i>Bekleyenler
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="selectByStatus('preparing')">
+                        <i class="bi bi-hourglass-split me-1"></i>Hazırlanıyor
+                    </button>
+                    <button class="btn btn-outline-success" onclick="selectByStatus('delivered')">
+                        <i class="bi bi-truck me-1"></i>Teslim Edildi
+                    </button>
+                </div>
+            </div>
+        @endif
+
+        {{-- Sipariş Listesi --}}
+        <div class="table-responsive" id="ordersContainer">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px"></th>
+                        <th style="width:90px">Saat</th>
+                        <th>Ürün</th>
+                        <th style="width:150px" class="text-center">Adet × Fiyat</th>
+                        <th style="width:120px" class="text-end">Tutar</th>
+                        <th style="width:160px">Siparişi Veren</th>
+                        <th style="width:140px">Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse(($flatItems ?? collect()) as $i => $item)
+                        @php
+                            $order = $item->order;
+                            $product = $item->product;
+                            $unit = $item->price ?? ($product->price ?? 0);
+                            $qty = $item->quantity ?? 1;
+                            $total = $unit * $qty;
+                            $name = trim($order->customer_name ?? '') !== '' ? $order->customer_name : 'Misafir';
+                            $created = $item->created_at ?? $order->created_at;
+                            $status = (string) ($order->status ?? 'pending');
+
+                            $statusLabels = [
+                                'pending' => 'Bekliyor',
+                                'preparing' => 'Hazırlanıyor',
+
+                                'delivered' => 'Teslim Edildi',
+                                'paid' => 'Ödendi',
+                                'canceled' => 'İptal',
+                            ];
+
+                            $statusIcons = [
+                                'pending' => 'clock',
+                                'preparing' => 'hourglass-split',
+                                'delivered' => 'truck',
+                                'paid' => 'credit-card',
+                                'canceled' => 'x-circle',
+                            ];
+                        @endphp
+                        <tr class="order-row status-{{ $status }}" data-order-id="{{ $order->id }}" data-status="{{ $status }}">
+                            <td>
+                                <input class="form-check-input order-checkbox custom-checkbox" type="checkbox"
+                                    value="{{ $order->id }}" id="order_{{ $order->id }}" data-status="{{ $status }}">
+                            </td>
+                            <td><small class="text-muted"><i
+                                        class="bi bi-clock me-1"></i>{{ optional($created)->format('H:i') }}</small></td>
+                            <td>
+                                <div class="fw-semibold">{{ $product->name ?? ('Ürün #' . $item->product_id) }}</div>
+                                @if(!empty($item->note))
+                                    <div class="small text-muted"><i class="bi bi-sticky me-1"></i>{{ $item->note }}</div>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ $qty }}</span>
+                                <span class="text-muted">× {{ number_format($unit, 2, ',', '.') }} ₺</span>
+                            </td>
+                            <td class="text-end fw-bold text-success">{{ number_format($total, 2, ',', '.') }} ₺</td>
+                            <td><span class="badge bg-dark-subtle text-dark">{{ $name }}</span></td>
+                            <td>
+                                <span
+                                    class="badge px-3 py-2 bg-{{ ['pending' => 'secondary', 'preparing' => 'warning', 'delivered' => 'success', 'paid' => 'success', 'canceled' => 'danger'][$status] ?? 'secondary' }}">
+                                    <i class="bi bi-{{ $statusIcons[$status] ?? 'question' }} me-1"></i>
+                                    {{ $statusLabels[$status] ?? strtoupper($status) }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="bi bi-inbox display-1 text-muted"></i>
+                                <div class="text-muted mt-3">Bu masada aktif sipariş bulunmuyor</div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Alt İşlem Paneli --}}
+        @if(($flatItems ?? collect())->count())
+            <div class="action-panel">
+                <div class="container-fluid">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-warning w-100 btn-action" id="btnPreparing" disabled>
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                <span class="d-none d-sm-inline">Hazırlanıyor</span>
+                                <span class="d-sm-none">Hazırla</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-success w-100 btn-action" id="btnDelivered" disabled>
+                                <i class="bi bi-truck me-1"></i>
+                                <span class="d-none d-sm-inline">Teslim Edildi</span>
+                                <span class="d-sm-none">Teslim</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-primary w-100 btn-action pulse-animation" id="btnPaid" disabled>
+                                <i class="bi bi-credit-card me-1"></i>
+                                <span class="d-none d-sm-inline">Ödendi</span>
+                                <span class="d-sm-none">Öde</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Masa Kapatma Butonu --}}
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-danger" id="btnCloseTable" disabled>
+                            <i class="bi bi-door-closed me-1"></i>Masayı Kapat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
-    {{-- Aktif siparişler (birden fazla kişi olabilir) --}}
-    @if(isset($activeOrders) && $activeOrders->count() > 1)
-        <div class="row g-3 mb-4">
-            @foreach($activeOrders as $ao)
-                <div class="col-12 col-md-6">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-person-badge"></i>
-                                <div>
-                                    <div class="fw-semibold">{{ $ao->customer_name ?? ('Sipariş #' . $ao->id) }}</div>
-                                    <small class="text-muted d-block">{{ $ao->created_at->format('d.m.Y H:i') }}</small>
-                                </div>
-                            </div>
-                            <span class="badge bg-outline-dark text-dark">{{ strtoupper($ao->status) }}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="list-group list-group-flush">
-                                @foreach($ao->items as $item)
-                                    <div class="list-group-item px-0 py-2 border-0">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <div class="fw-semibold">{{ $item->product->name ?? 'Ürün' }}</div>
-                                                <small class="text-muted">{{ $item->quantity }} adet</small>
-                                            </div>
-                                            <span class="fw-semibold">{{ number_format($item->line_total ?? (($item->price ?? 0) * ($item->quantity ?? 0)), 2) }} ₺</span>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @endif
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const selectAllCheckbox = document.getElementById('selectAll');
+                const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+                const selectedCountEl = document.getElementById('selectedCount');
 
-    {{-- Mevcut Sipariş --}}
-    @if(!$currentOrder)
-        <div class="text-center py-5">
-            <div class="p-4 bg-light rounded-circle d-inline-flex mb-3">
-                <i class="bi bi-clipboard-x display-4 text-muted"></i>
-            </div>
-            <h5 class="text-muted mb-2">Aktif Sipariş Yok</h5>
-            <p class="text-muted">Bu masada şu anda aktif bir sipariş bulunmuyor.</p>
-        </div>
-    @else
-        {{-- CSRF token'ı JS için gizli inputta tutalım --}}
-        <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
-        <input type="hidden" id="currentOrderStatus" value="{{ $currentOrder->status }}">
+                const btnPreparing = document.getElementById('btnPreparing');
 
-        <div class="card mb-4 border-0 shadow-sm" data-order-id="{{ $currentOrder->id }}">
-            <div class="card-header bg-gradient-primary text-white border-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-receipt fs-5"></i>
-                        <div>
-                            <h5 class="mb-0">{{ $currentOrder->customer_name ?? ('Sipariş #' . $currentOrder->id) }}</h5>
-                            <small class="opacity-75">{{ $currentOrder->created_at->format('d.m.Y H:i') }}</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-light text-dark fs-6" id="order-status-text">
-                        {{ $statusMap[$currentOrder->status] ?? strtoupper($currentOrder->status) }}
-                    </span>
-                </div>
-            </div>
+                const btnDelivered = document.getElementById('btnDelivered');
+                const btnPaid = document.getElementById('btnPaid');
+                const btnCloseTable = document.getElementById('btnCloseTable');
 
-            <div class="card-body p-4">
-                {{-- Ürünler --}}
-                <div class="mb-4">
-                    <h6 class="fw-semibold mb-3 text-muted">Sipariş Detayları</h6>
-                    <div class="list-group list-group-flush">
-                        @foreach($currentOrder->items as $item)
-                            <div class="list-group-item px-0 py-3 border-0 border-bottom">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 fw-semibold">{{ $item->product->name ?? 'Ürün' }}</h6>
-                                        <div class="d-flex align-items-center gap-3 small text-muted">
-                                            <span class="d-flex align-items-center gap-1">
-                                                <i class="bi bi-x-lg"></i>
-                                                {{ $item->quantity }}
-                                            </span>
-                                            @isset($item->price)
-                                                <span class="d-flex align-items-center gap-1">
-                                                    <i class="bi bi-tag"></i>
-                                                    {{ number_format($item->price, 2) }} ₺
-                                                </span>
-                                            @endisset
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-primary">
-                                            {{ number_format($item->line_total ?? (($item->price ?? 0) * ($item->quantity ?? 0)), 2) }} ₺
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+                // Seçim değişikliklerini dinle
+                function updateSelection() {
+                    const selectedOrders = Array.from(orderCheckboxes).filter(cb => cb.checked);
+                    const selectedCount = selectedOrders.length;
 
-                {{-- Toplam --}}
-                <div class="bg-light rounded p-3 mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold fs-5">Genel Toplam:</span>
-                        <span class="fw-bold fs-4 text-primary">{{ number_format($currentOrder->total_amount, 2) }} ₺</span>
-                    </div>
-                </div>
+                    // Seçili sayıyı güncelle
+                    selectedCountEl.textContent = selectedCount + ' Seçili';
 
-                {{-- Durum geçiş butonları --}}
-                <div class="mb-3">
-                    <h6 class="fw-semibold mb-3 text-muted">Sipariş Durumu Güncelle</h6>
-                    <div class="status-flow">
-                        <button id="btn-preparing" class="btn btn-warning" @disabled($currentOrder->status !== 'pending')
-                            data-route-url="{{ route('waiter.orders.status', $currentOrder->id) }}"
-                            onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','preparing')">
-                            <i class="bi bi-hourglass-split me-1"></i>
-                            <span>Hazırlanıyor</span>
-                        </button>
+                    // Satırın görünümünü güncelle (tablo satırı)
+                    orderCheckboxes.forEach(cb => {
+                        const row = cb.closest('tr.order-row');
+                        if (row) {
+                            // seçili olanları vurgulamak için .table-primary kullanıyoruz (CSS'te tanımlı)
+                            row.classList.toggle('table-primary', cb.checked);
+                        }
+                    });
 
-                        <button id="btn-delivered" class="btn btn-success" @disabled($currentOrder->status !== 'preparing')
-                            data-route-url="{{ route('waiter.orders.status', $currentOrder->id) }}"
-                            onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','delivered')">
-                            <i class="bi bi-check-circle me-1"></i>
-                            <span>Teslim Edildi</span>
-                        </button>
 
-                        <button id="btn-paid" class="btn btn-primary" @disabled(!in_array($currentOrder->status, ['delivered', 'paid']))
-                            data-route-url="{{ route('waiter.orders.status', $currentOrder->id) }}"
-                            onclick="changeStatus('{{ route('waiter.orders.status', $currentOrder->id) }}','paid')">
-                            <i class="bi bi-credit-card me-1"></i>
-                            <span>Ödendi</span>
-                        </button>
-                    </div>
-                </div>
+                    // Buton durumlarını güncelle
+                    updateButtonStates(selectedOrders);
 
-                <div id="status-flash" class="mt-3" style="display:none;"></div>
-            </div>
-        </div>
-    @endif
-    <div class="text-center mt-4">
-        <a href="{{ route('waiter.dashboard') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Masalara Dön
-        </a>
-    </div>
-    {{-- Geçmiş Siparişler --}}
-    @if($pastOrders && $pastOrders->count() > 0)
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light border-0">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-clock-history text-muted"></i>
-                    <h5 class="mb-0 fw-semibold">Geçmiş Siparişler</h5>
-                    <span class="badge bg-secondary">{{ $pastOrders->count() }}</span>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="accordion accordion-flush" id="pastOrdersAccordion">
-                    @foreach($pastOrders as $index => $pastOrder)
-                        <div class="accordion-item border-0">
-                            <h2 class="accordion-header" id="heading{{ $index }}">
-                                <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse" 
-                                    data-bs-target="#collapse{{ $index }}" aria-expanded="false" aria-controls="collapse{{ $index }}">
-                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="p-2 bg-success bg-opacity-10 rounded">
-                                                <i class="bi bi-check-circle text-success"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold">Sipariş #{{ $pastOrder->id }}</div>
-                                                <small class="text-muted">{{ $pastOrder->created_at->format('d.m.Y H:i') }}</small>
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fw-bold text-success">{{ number_format($pastOrder->total_amount, 2) }} ₺</div>
-                                            <small class="text-muted">Tamamlandı</small>
-                                        </div>
-                                    </div>
-                                </button>
-                            </h2>
-                            <div id="collapse{{ $index }}" class="accordion-collapse collapse" 
-                                aria-labelledby="heading{{ $index }}" data-bs-parent="#pastOrdersAccordion">
-                                <div class="accordion-body bg-light">
-                                    <div class="list-group list-group-flush">
-                                        @foreach($pastOrder->items as $item)
-                                            <div class="list-group-item bg-transparent px-0 py-2 border-0 border-bottom">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <div class="fw-semibold">{{ $item->product->name ?? 'Ürün' }}</div>
-                                                        <small class="text-muted">{{ $item->quantity }} adet</small>
-                                                    </div>
-                                                    <span class="fw-semibold">{{ number_format($item->line_total, 2) }} ₺</span>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    @endif
+                    // Tümünü seç checkbox'ını güncelle
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = selectedCount === orderCheckboxes.length && selectedCount > 0;
+                        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < orderCheckboxes.length;
+                    }
+                }
 
-@endsection
+                // Buton durumlarını güncelle
+                function updateButtonStates(selectedOrders) {
+                    // Seçim yoksa hepsini kapat
+                    if (selectedOrders.length === 0) {
+                        [btnPreparing, btnDelivered, btnPaid].forEach(btn => { if (btn) btn.disabled = true; });
+                        return;
+                    }
 
-@push('scripts')
-    <script>
-        // Sayfa yüklendiğinde mevcut duruma göre butonları ayarla
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentStatus = document.getElementById('currentOrderStatus')?.value;
-            if (currentStatus) {
-                setButtonsByStatus(currentStatus);
-            }
-        });
+                    const statuses = selectedOrders.map(cb => cb.dataset.status);
+                    const hasPending = statuses.some(s => s === 'pending');
+                    const hasPreparing = statuses.some(s => s === 'preparing');
+                    const hasDelivered = statuses.some(s => s === 'delivered');
 
-        function setButtonsByStatus(status) {
-            console.log('setButtonsByStatus çağrıldı, status:', status);
-            
-            const btnPreparing = document.getElementById('btn-preparing');
-            const btnDelivered = document.getElementById('btn-delivered');
-            const btnPaid = document.getElementById('btn-paid');
+                    // En az bir uygun sipariş varsa ilgili buton aktif
+                    if (btnPreparing) {
+                        const dis = !hasPending;
+                        btnPreparing.disabled = dis;
+                        btnPreparing.toggleAttribute('disabled', dis);
+                    }
+                    if (btnDelivered) {
+                        const dis = !hasPreparing;
+                        btnDelivered.disabled = dis;
+                        btnDelivered.toggleAttribute('disabled', dis);
+                    }
+                    if (btnPaid) {
+                        const dis = !hasDelivered;
+                        btnPaid.disabled = dis;
+                        btnPaid.toggleAttribute('disabled', dis);
+                    }
 
-            if (!btnPreparing || !btnDelivered || !btnPaid) {
-                console.log('Butonlar bulunamadı!');
-                return;
-            }
+                    // Masa kapatma: tüm siparişler paid ise
+                    const allOrders = Array.from(orderCheckboxes);
+                    const allPaid = allOrders.length > 0 && allOrders.every(cb => cb.dataset.status === 'paid');
+                    if (btnCloseTable) btnCloseTable.disabled = !allPaid;
+                }
 
-            // Tüm butonları önce temizle ve onclick eventlerini kaldır
-            [btnPreparing, btnDelivered, btnPaid].forEach(btn => {
-                btn.classList.remove('btn-warning', 'btn-success', 'btn-primary', 'btn-outline-secondary');
-                btn.disabled = true; // Önce hepsini disable et
-                btn.style.pointerEvents = 'none'; // Tıklanmayı engelle
-                btn.onclick = null; // onclick eventini kaldır
-            });
+                // Event listeners
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.addEventListener('change', function () {
+                        orderCheckboxes.forEach(cb => cb.checked = this.checked);
+                        updateSelection();
+                    });
+                }
 
-            // Status'e göre butonları ayarla
-            switch(status) {
-                case 'pending':
-                    // Sadece "Hazırlanıyor" butonu aktif
-                    btnPreparing.disabled = false;
-                    btnPreparing.style.pointerEvents = 'auto';
-                    btnPreparing.classList.add('btn-warning');
-                    btnPreparing.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'preparing'); };
-                    
-                    btnDelivered.classList.add('btn-outline-secondary');
-                    btnPaid.classList.add('btn-outline-secondary');
-                    break;
-                    
-                case 'preparing':
-                    // Sadece "Teslim Edildi" butonu aktif
-                    btnPreparing.classList.add('btn-outline-secondary');
-                    
-                    btnDelivered.disabled = false;
-                    btnDelivered.style.pointerEvents = 'auto';
-                    btnDelivered.classList.add('btn-success');
-                    btnDelivered.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'delivered'); };
-                    
-                    btnPaid.classList.add('btn-outline-secondary');
-                    break;
-                    
-                case 'delivered':
-                    // Sadece "Ödendi" butonu aktif
-                    btnPreparing.classList.add('btn-outline-secondary');
-                    btnDelivered.classList.add('btn-outline-secondary');
-                    
-                    btnPaid.disabled = false;
-                    btnPaid.style.pointerEvents = 'auto';
-                    btnPaid.classList.add('btn-primary');
-                    btnPaid.onclick = function() { changeStatus('{{ $currentOrder ? route("waiter.orders.status", $currentOrder->id) : "#" }}', 'paid'); };
-                    break;
-                    
-                case 'paid':
-                    // Tüm butonlar pasif - onclick eventleri zaten null
-                    btnPreparing.classList.add('btn-outline-secondary');
-                    btnDelivered.classList.add('btn-outline-secondary');
-                    btnPaid.classList.add('btn-outline-secondary');
-                    break;
-                    
-                default:
-                    console.log('Bilinmeyen status:', status);
-                    break;
-            }
-            
-            console.log('Buton durumları güncellendi:');
-            console.log('- Hazırlanıyor disabled:', btnPreparing.disabled, 'onclick:', btnPreparing.onclick !== null);
-            console.log('- Teslim Edildi disabled:', btnDelivered.disabled, 'onclick:', btnDelivered.onclick !== null);
-            console.log('- Ödendi disabled:', btnPaid.disabled, 'onclick:', btnPaid.onclick !== null);
-        }
+                function rebindCheckboxListeners() {
+                    document.querySelectorAll('.order-checkbox').forEach(cb => {
+                        cb.removeEventListener('change', updateSelection);
+                        cb.addEventListener('change', updateSelection);
+                    });
+                }
+                rebindCheckboxListeners();
 
-        async function changeStatus(url, toStatus) {
-            const token = document.getElementById('csrfToken')?.value;
-            const flash = document.getElementById('status-flash');
-            const statusText = document.getElementById('order-status-text');
-            const currentOrderStatus = document.getElementById('currentOrderStatus');
+                // Durum butonları event listeners
+                [
+                    { btn: btnPreparing, from: 'pending', to: 'preparing' },
+                    { btn: btnDelivered, from: 'preparing', to: 'delivered' },
+                    { btn: btnPaid, from: 'delivered', to: 'paid' }
+                ].forEach(({ btn, from, to }) => {
+                    if (!btn) return;
+                    btn.addEventListener('click', function () {
+                        const selectedOrders = Array.from(document.querySelectorAll('.order-checkbox'))
+                            .filter(cb => cb.checked && String(cb.dataset.status) === String(from))
+                            .map(cb => cb.value);
 
-            // Butonu disable et ve loading state'e geç
-            const clickedButton = event.target.closest('button');
-            const originalContent = clickedButton.innerHTML;
-            const originalDisabled = clickedButton.disabled;
-            
-            clickedButton.disabled = true;
-            clickedButton.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i>Güncelleniyor...';
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': token,
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ to_status: toStatus })
+                        if (selectedOrders.length > 0) {
+                            updateOrderStatus(selectedOrders, to);
+                        }
+                    });
                 });
 
-                const data = await res.json();
-
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'Durum güncellenemedi.');
-                }
-
-                // UI güncelle
-                const statusMap = {
-                    'pending': 'Sipariş Bekliyor',
-                    'preparing': 'Hazırlanıyor',
-                    'delivered': 'Teslim Edildi',
-                    'paid': 'Ödendi'
+                // Duruma göre seçim fonksiyonları
+                window.selectByStatus = function (status) {
+                    orderCheckboxes.forEach(cb => {
+                        cb.checked = cb.dataset.status === status;
+                    });
+                    updateSelection();
                 };
 
-                // Status badge'i güncelle
-                if (statusText) {
-                    statusText.textContent = statusMap[data.new_status] ?? data.new_status.toUpperCase();
+                // AJAX ile sipariş durumu güncelleme
+                function updateOrderStatus(orderIds, status) {
+                    // Loading state
+                    document.querySelectorAll('.btn-action').forEach(btn => btn.disabled = true);
+
+                    // Her sipariş için ayrı ayrı güncelle
+                    const updatePromises = orderIds.map(orderId => {
+                        return fetch(`/waiter/orders/${orderId}/status`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({ status: status })
+                        });
+                    });
+
+                    Promise.all(updatePromises)
+                        .then(() => {
+                            // Sayfayı yenile
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Hata:', error);
+                            alert('Sipariş durumu güncellenirken bir hata oluştu.');
+                            // Butonları tekrar aktif et
+                            updateSelection();
+                        });
                 }
 
-                // Hidden inputu güncelle
-                if (currentOrderStatus) {
-                    currentOrderStatus.value = data.new_status;
-                }
-
-                // Tıklanan butonu eski haline getir
-                clickedButton.innerHTML = originalContent;
-
-                // Butonları yeni duruma göre güncelle
-                console.log('Yeni durum:', data.new_status);
-                setButtonsByStatus(data.new_status);
-
-                // Ana sayfayı da güncelle (dashboard)
-                if (window.opener && !window.opener.closed) {
-                    window.opener.location.reload();
-                }
-                
-                // Bu sayfayı da yenile
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-
-                // Başarı mesajı göster
-                if (flash) {
-                    flash.className = 'alert alert-success';
-                    flash.innerHTML = `
-                        <i class="bi bi-check-circle me-2"></i>
-                        Durum başarıyla güncellendi: ${statusMap[data.new_status]}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    flash.style.display = 'block';
-
-                    // 5 saniye sonra otomatik gizle
-                    setTimeout(() => {
-                        flash.style.display = 'none';
-                    }, 5000);
-                }
-
-            } catch (err) {
-                // Hata durumunda butonu eski haline getir
-                clickedButton.disabled = originalDisabled;
-                clickedButton.innerHTML = originalContent;
-
-                if (flash) {
-                    flash.className = 'alert alert-danger';
-                    flash.innerHTML = `
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        ${err.message || 'Bir hata oluştu.'}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    flash.style.display = 'block';
-
-                    // 10 saniye sonra otomatik gizle
-                    setTimeout(() => {
-                        flash.style.display = 'none';
-                    }, 10000);
-                }
-                console.error('Durum güncelleme hatası:', err);
-            }
-        }
-
-        // Global scope'a ekle
-        window.changeStatus = changeStatus;
-        window.setButtonsByStatus = setButtonsByStatus;
-    </script>
-@endpush
+                // İlk yüklemede durumu güncelle
+                updateSelection();
+            });
+        </script>
+    @endpush
+@endsection

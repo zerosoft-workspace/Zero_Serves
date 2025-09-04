@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Services\StockService;
+use App\Models\OrderItem;
 
 class WaiterController extends Controller
 {
@@ -36,7 +37,7 @@ class WaiterController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        
+
         // Filtreleme parametreleri
         $query = request('q');
         $statusFilter = request('status');
@@ -71,6 +72,31 @@ class WaiterController extends Controller
 
             $tables = $tablesQuery->get();
 
+            // Her masa için aktif (ödenmemiş) tüm siparişlerin toplam tutarı
+            foreach ($tables as $t) {
+                $t->active_total_amount = \App\Models\Order::query()
+                    ->where('table_id', $t->id)
+                    ->whereNotIn('status', ['paid', 'canceled'])
+                    ->sum('total_amount');
+            }
+
+            // Tüm aktif siparişler ve kalemleri (tek tabloda göstermek için)
+            $activeOrders = Order::query()
+                ->select(['id', 'table_id', 'customer_name', 'status', 'total_amount', 'created_at'])
+                ->with([
+                    'table:id,name,waiter_id',
+                    'items' => function ($q) {
+                        $q->select(['id', 'order_id', 'product_id', 'quantity', 'price', 'line_total']);
+                    },
+                    'items.product:id,name'
+                ])
+                ->whereHas('table', function ($q) use ($user) {
+                    $q->where('waiter_id', $user->id);
+                })
+                ->whereNotIn('status', ['paid', 'canceled'])
+                ->latest('id')
+                ->get();
+
             // Sadece bu garsona atanan masalardan gelen çağrılar
             $activeCalls = WaiterCall::query()
                 ->select(['id', 'table_id', 'status', 'created_at'])
@@ -83,13 +109,14 @@ class WaiterController extends Controller
                 ->limit(10)
                 ->get();
 
-            return compact('tables', 'activeCalls');
+            return compact('tables', 'activeCalls', 'activeOrders');
         })();
 
         $tables = $data['tables'];
         $activeCalls = $data['activeCalls'];
+        $activeOrders = $data['activeOrders'];
 
-        return view('waiter.dashboard', compact('tables', 'activeCalls'));
+        return view('waiter.dashboard', compact('tables', 'activeCalls', 'activeOrders'));
     }
 
 
@@ -97,7 +124,7 @@ class WaiterController extends Controller
     public function showTable($id)
     {
         $user = Auth::user();
-        
+
         // Garson yetki kontrolü - sadece kendi masalarına erişebilir
         $user = Auth::user();
         if (!$user || $user->role !== 'waiter') {
@@ -109,7 +136,7 @@ class WaiterController extends Controller
             ->where('id', $id)
             ->where('waiter_id', $user->id)
             ->first();
-            
+
         if (!$table) {
             abort(403, 'Bu masaya erişim yetkiniz yok.');
         }
@@ -153,13 +180,31 @@ class WaiterController extends Controller
         $currentOrder = $data['currentOrder'];
         $activeOrders = $data['activeOrders'];
         $pastOrders = $data['pastOrders'];
+        // Bu masaya ait, aktif (paid/canceled değil) TÜM sipariş KALEMLERİ
+        $flatItems = OrderItem::with([
+            'product:id,name,price',
+            'order:id,table_id,status,customer_name,created_at'
+        ])
+            ->whereHas('order', function ($q) use ($table) {
+                $q->where('table_id', $table->id)
+                    ->whereNotIn('status', ['paid', 'canceled']);
+            })
+            ->orderByDesc('id')
+            ->get();
+
+        $flatTotal = $flatItems->sum(function ($i) {
+            $unit = $i->price ?? optional($i->product)->price ?? 0;
+            $qty = $i->quantity ?? 1;
+            return $unit * $qty;
+        });
 
         return view('waiter.table', [
             'table' => $table,
-            'order' => $currentOrder,
-            'currentOrder' => $currentOrder,
             'activeOrders' => $activeOrders,
             'pastOrders' => $pastOrders,
+            // yeni eklenenler:
+            'flatItems' => $flatItems,
+            'flatTotal' => $flatTotal,
         ]);
     }
 
@@ -259,7 +304,7 @@ class WaiterController extends Controller
                 'from' => $from,
                 'to' => $to,
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Durum güncellenirken hata oluştu: ' . $e->getMessage()
@@ -292,10 +337,10 @@ class WaiterController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Spesifik masa cache'ini temizle
             Cache::forget("waiter_table_{$user->id}_{$tableId}");
-            
+
             // Dashboard cache'lerini temizle - garson bazlı
             $dashboardKeys = [
                 "waiter_dashboard_{$user->id}",
@@ -310,7 +355,7 @@ class WaiterController extends Controller
             // Tüm waiter cache'lerini temizle
             $patterns = [
                 "waiter_dashboard_{$user->id}*",
-                "waiter_tables_{$user->id}*", 
+                "waiter_tables_{$user->id}*",
                 "waiter_calls_{$user->id}*",
                 "waiter_table_{$user->id}*"
             ];
