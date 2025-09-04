@@ -179,6 +179,8 @@ Route::get('/table/{token}/cart', [\App\Http\Controllers\CustomerCartController:
 Route::get('/table/{token}/cart/items', [\App\Http\Controllers\CustomerCartController::class, 'items'])
     ->name('customer.cart.items');
 
+Route::get('/table/{token}/menu/{category}', [\App\Http\Controllers\CustomerOrderController::class, 'category'])
+    ->name('customer.menu');
 /*
 |--------------------------------------------------------------------------
 | Garson

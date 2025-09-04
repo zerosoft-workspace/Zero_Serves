@@ -11,6 +11,8 @@ use App\Models\WaiterCall;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class CustomerOrderController extends Controller
 {
@@ -50,6 +52,62 @@ class CustomerOrderController extends Controller
                 // First visit or dashboard request - show dashboard
                 return view('customer.dashboard', compact('categories', 'table', 'orders'));
         }
+    }
+
+    /**
+     * Show products for a selected category on a dedicated page.
+     */
+    public function category(string $token, string $category)
+    {
+        $table = Table::where('token', $token)->firstOrFail();
+
+        $hasProductActiveCol = Schema::hasColumn('products', 'is_active');
+        $hasCategoryActiveCol = Schema::hasColumn('categories', 'is_active');
+
+        $withProducts = function ($q) use ($hasProductActiveCol) {
+            $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1))
+                ->orderBy('name');
+        };
+
+        // Try by exact slug column first (if exists and value matches)
+        $query = Category::query()->when($hasCategoryActiveCol, fn($q) => $q->where('is_active', 1));
+        $activeCat = $query->clone()->where('slug', $category)->with(['products' => $withProducts])->first();
+
+        // Fallback: compare by generated slug of (slug ?? name) to handle Turkish chars
+        if (!$activeCat) {
+            $candidates = Category::query()
+                ->when($hasCategoryActiveCol, fn($q) => $q->where('is_active', 1))
+                ->with(['products' => $withProducts])
+                ->get();
+
+            $needle = Str::slug($category);
+            $activeCat = $candidates->first(function ($c) use ($needle) {
+                $base = !empty($c->slug) ? $c->slug : $c->name;
+                return Str::slug($base) === $needle;
+            });
+        }
+
+        if (!$activeCat) {
+            abort(404);
+        }
+        // Build categories list for sidebar
+        $categories = Category::query()
+            ->when($hasCategoryActiveCol, fn($q) => $q->where('is_active', 1))
+            ->whereHas('products', function ($q) use ($hasProductActiveCol) {
+                $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1));
+            })
+            ->with(['products' => function ($q) use ($hasProductActiveCol) {
+                $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1))
+                  ->orderBy('name');
+            }])
+            ->when(
+                Schema::hasColumn('categories', 'order_no'),
+                fn($q) => $q->orderBy('order_no')->orderBy('name'),
+                fn($q) => $q->orderBy('name')
+            )
+            ->get();
+
+        return view('customer.menu', compact('activeCat', 'table', 'categories'));
     }
 
     // Sepete ekle

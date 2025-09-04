@@ -675,19 +675,22 @@
                         asset('images/menu/tatli.jpg'),
                     ];
                     $img = $fallbacks[$loop->index % count($fallbacks)];
-                  @endphp
+                    $slug = $cat->slug ?? \Illuminate\Support\Str::slug($cat->name);
+                @endphp
 
-                <div class="category-card" data-category="{{ Str::slug($cat->name) }}">
+                <a class="category-card block"
+                    href="{{ route('customer.menu', ['token' => $table->token, 'category' => $slug]) }}">
                     <img src="{{ $img }}" alt="{{ $cat->name }}" class="category-img">
                     <div class="category-title">
                         <h3 class="font-playfair text-xl font-bold">{{ $cat->name }}</h3>
                         <p class="text-sm text-gray-300">{{ $cat->products->count() }} ürün</p>
                     </div>
-                </div>
+                </a>
             @empty
                 <p class="text-gray-400 col-span-4 text-center">Henüz kategori bulunmamaktadır.</p>
             @endforelse
         </div>
+
     </main>
 
 
@@ -1042,6 +1045,9 @@
             const card = e.target.closest('.category-card');
             if (!card) return;
             const key = (card.dataset.category || '').toString().trim();
+            // If no data-category, it's a normal link to menu page → allow default navigation
+            if (!key) return;
+            e.preventDefault();
             showProductsSafe(key);
         });
 
