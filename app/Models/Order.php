@@ -12,7 +12,7 @@ class Order extends Model
     public const STATUS_PREPARING = 'preparing';
     public const STATUS_DELIVERED = 'delivered';
     public const STATUS_PAID = 'paid';
-    public const STATUS_CANCELED = 'canceled';
+    public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUNDED = 'refunded';
 
     public const ALL_STATUSES = [
@@ -20,23 +20,31 @@ class Order extends Model
         self::STATUS_PREPARING,
         self::STATUS_DELIVERED,
         self::STATUS_PAID,
-        self::STATUS_CANCELED,
+        self::STATUS_CANCELLED,
         self::STATUS_REFUNDED,
     ];
+
     protected $fillable = ['table_id', 'customer_name', 'status', 'payment_status', 'total_amount'];
 
-    protected static array $TRANSITIONS = [
+    // Dışarıdan (ör. controller loglarında) okunabilmesi için public
+    public static array $TRANSITIONS = [
         'waiter' => [
-            self::STATUS_PENDING => [self::STATUS_PREPARING],
-            self::STATUS_PREPARING => [self::STATUS_DELIVERED],
-            self::STATUS_DELIVERED => [self::STATUS_PAID], // YENİ: Garson Paid yapabilir
+                // Garson iptal edebilir: pending|preparing -> cancelled
+            self::STATUS_PENDING => [self::STATUS_PREPARING, self::STATUS_CANCELLED],
+            self::STATUS_PREPARING => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED => [self::STATUS_PAID],
+            self::STATUS_PAID => [],
+            self::STATUS_CANCELLED => [],
+            self::STATUS_REFUNDED => [],
         ],
         'admin' => [
-            self::STATUS_DELIVERED => [
-                self::STATUS_PAID,
-                self::STATUS_CANCELED,
-                self::STATUS_REFUNDED,
-            ],
+                // Admin daha esnek: delivered -> paid|refunded|cancelled
+            self::STATUS_PENDING => [self::STATUS_PREPARING, self::STATUS_CANCELLED],
+            self::STATUS_PREPARING => [self::STATUS_DELIVERED, self::STATUS_CANCELLED],
+            self::STATUS_DELIVERED => [self::STATUS_PAID, self::STATUS_REFUNDED, self::STATUS_CANCELLED],
+            self::STATUS_PAID => [self::STATUS_REFUNDED], // istersen boş bırakabilirsin
+            self::STATUS_CANCELLED => [],
+            self::STATUS_REFUNDED => [],
         ],
     ];
 
@@ -44,24 +52,22 @@ class Order extends Model
     {
         $from = (string) $this->status;
         $map = static::$TRANSITIONS[$role] ?? [];
-
         return in_array($to, $map[$from] ?? [], true);
     }
+
     public function table(): BelongsTo
     {
-        // Model adı sizde büyük ihtimalle App\Models\Table
         return $this->belongsTo(Table::class, 'table_id', 'id');
-        // Eğer model adı farklıysa (ör. RestaurantTable), sınıfı ona göre değiştirin:
-        // return $this->belongsTo(RestaurantTable::class, 'table_id', 'id');
     }
+
     public function items(): HasMany
     {
-        // order_items.order_id → orders.id
         return $this->hasMany(OrderItem::class, 'order_id', 'id');
     }
+
     public function orderItems(): HasMany
     {
-        return $this->items(); // aynı ilişkiye alias
+        return $this->items(); // alias
     }
 
     public function payments(): HasMany

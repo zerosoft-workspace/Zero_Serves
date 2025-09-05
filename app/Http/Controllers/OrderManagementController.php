@@ -47,11 +47,11 @@ class OrderManagementController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
-                  ->orWhereHas('table', function($tq) use ($search) {
-                      $tq->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('table', function ($tq) use ($search) {
+                        $tq->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -59,7 +59,7 @@ class OrderManagementController extends Controller
 
         // İstatistikler - optimize edilmiş
         $stats = $this->getOrderStatsOptimized();
-        
+
         // Masalar (filtreleme için) - cache edilebilir
         $tables = Table::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
@@ -72,7 +72,7 @@ class OrderManagementController extends Controller
     public function show(Order $order)
     {
         $order->load(['table', 'orderItems.product', 'payments']);
-        
+
         return view('admin.orders.show', compact('order'));
     }
 
@@ -82,7 +82,7 @@ class OrderManagementController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'status' => 'required|in:pending,preparing,delivered,paid,canceled'
+            'status' => 'required|in:pending,preparing,delivered,paid,cancelled'
         ]);
 
         $oldStatus = $order->status;
@@ -96,14 +96,14 @@ class OrderManagementController extends Controller
             ], 400);
         }
 
-        DB::transaction(function() use ($order, $newStatus, $oldStatus) {
+        DB::transaction(function () use ($order, $newStatus, $oldStatus) {
             $order->update(['status' => $newStatus]);
 
             // Stok işlemleri
             if ($newStatus === 'paid' && $oldStatus !== 'paid') {
                 // Sipariş ödendi, stoktan düş
                 $this->stockService->updateStockAfterOrder($order);
-            } elseif ($newStatus === 'canceled' && in_array($oldStatus, ['preparing', 'delivered', 'paid'])) {
+            } elseif ($newStatus === 'cancelled' && in_array($oldStatus, ['preparing', 'delivered', 'paid'])) {
                 // Sipariş iptal edildi, stoku geri yükle
                 $this->stockService->restoreStockAfterCancellation($order);
             }
@@ -134,7 +134,7 @@ class OrderManagementController extends Controller
         $request->validate([
             'order_ids' => 'required|array',
             'order_ids.*' => 'exists:orders,id',
-            'status' => 'required|in:pending,preparing,delivered,paid,canceled'
+            'status' => 'required|in:pending,preparing,delivered,paid,cancelled'
         ]);
 
         $updated = 0;
@@ -165,25 +165,26 @@ class OrderManagementController extends Controller
         $deleted = 0;
         $errors = [];
 
-        DB::transaction(function() use ($request, &$deleted, &$errors) {
+        DB::transaction(function () use ($request, &$deleted, &$errors) {
             foreach ($request->order_ids as $orderId) {
                 try {
                     $order = Order::with(['orderItems', 'payments'])->find($orderId);
-                    if (!$order) continue;
+                    if (!$order)
+                        continue;
 
                     // Stoku geri yükle (eğer sipariş preparing veya delivered durumundaysa)
                     if (in_array($order->status, ['preparing', 'delivered'])) {
                         $this->stockService->restoreStockAfterCancellation($order);
                     }
-                    
+
                     // İlişkili kayıtları sil
                     $order->orderItems()->delete();
                     $order->payments()->delete();
-                    
+
                     // Siparişi sil
                     $order->delete();
                     $deleted++;
-                    
+
                 } catch (\Exception $e) {
                     $errors[] = "Sipariş #{$orderId}: " . $e->getMessage();
                 }
@@ -211,16 +212,16 @@ class OrderManagementController extends Controller
     public function destroy(Order $order)
     {
         try {
-            DB::transaction(function() use ($order) {
+            DB::transaction(function () use ($order) {
                 // Stoku geri yükle (eğer sipariş preparing veya delivered durumundaysa)
                 if (in_array($order->status, ['preparing', 'delivered'])) {
                     $this->stockService->restoreStockAfterCancellation($order);
                 }
-                
+
                 // İlişkili kayıtları sil
                 $order->orderItems()->delete();
                 $order->payments()->delete();
-                
+
                 // Siparişi sil
                 $order->delete();
             });
@@ -243,7 +244,7 @@ class OrderManagementController extends Controller
     public function getOrderStats()
     {
         $today = now()->startOfDay();
-        
+
         return [
             'total_today' => Order::whereDate('created_at', $today)->count(),
             'pending' => Order::where('status', 'pending')->count(),
@@ -262,7 +263,7 @@ class OrderManagementController extends Controller
     public function getOrderStatsOptimized()
     {
         $today = now()->startOfDay();
-        
+
         // Tek query ile tüm istatistikleri al
         $stats = DB::table('orders')
             ->select([
@@ -298,7 +299,7 @@ class OrderManagementController extends Controller
         $stats = $this->getOrderStats();
 
         return response()->json([
-            'recent_orders' => $recentOrders->map(function($order) {
+            'recent_orders' => $recentOrders->map(function ($order) {
                 return [
                     'id' => $order->id,
                     'table_name' => $order->table->name ?? 'Masa Yok',
@@ -319,7 +320,7 @@ class OrderManagementController extends Controller
     public function print(Order $order)
     {
         $order->load(['table', 'orderItems.product']);
-        
+
         return view('admin.orders.print', compact('order'));
     }
 
@@ -342,18 +343,18 @@ class OrderManagementController extends Controller
         $orders = $query->orderBy('created_at', 'desc')->get();
 
         $filename = 'siparisler_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($orders) {
+        $callback = function () use ($orders) {
             $file = fopen('php://output', 'w');
-            
+
             // UTF-8 BOM
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             // Header
             fputcsv($file, [
                 'Sipariş No',
@@ -390,11 +391,11 @@ class OrderManagementController extends Controller
     private function isValidStatusTransition($from, $to)
     {
         $validTransitions = [
-            'pending' => ['preparing', 'canceled'],
-            'preparing' => ['delivered', 'canceled'],
-            'delivered' => ['paid', 'canceled'],
+            'pending' => ['preparing', 'cancelled'],
+            'preparing' => ['delivered', 'cancelled'],
+            'delivered' => ['paid', 'cancelled'],
             'paid' => [],
-            'canceled' => []
+            'cancelled' => []
         ];
 
         return in_array($to, $validTransitions[$from] ?? []);
@@ -405,12 +406,12 @@ class OrderManagementController extends Controller
      */
     private function getStatusText($status)
     {
-        return match($status) {
+        return match ($status) {
             'pending' => 'Bekliyor',
             'preparing' => 'Hazırlanıyor',
             'delivered' => 'Teslim Edildi',
             'paid' => 'Ödendi',
-            'canceled' => 'İptal Edildi',
+            'cancelled' => 'İptal Edildi',
             default => 'Bilinmiyor'
         };
     }
@@ -425,7 +426,7 @@ class OrderManagementController extends Controller
             'preparing' => 'info',
             'delivered' => 'success',
             'paid' => 'secondary',
-            'canceled' => 'danger'
+            'cancelled' => 'danger'
         ];
 
         return $colors[$status] ?? 'secondary';
@@ -444,7 +445,7 @@ class OrderManagementController extends Controller
             return 0;
         }
 
-        $totalMinutes = $orders->sum(function($order) {
+        $totalMinutes = $orders->sum(function ($order) {
             return $order->created_at->diffInMinutes($order->updated_at);
         });
 

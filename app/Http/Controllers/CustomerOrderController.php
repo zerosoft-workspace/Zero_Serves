@@ -27,36 +27,31 @@ class CustomerOrderController extends Controller
             }
         ])->get();
 
-        // Bu masanın aktif siparişleri (ödenen siparişler hariç)
+        // Bu masanın aktif siparişleri:
+        // - Ödenenler görünmesin
+        // - İPTAL EDİLENLER görünmesin  ✅
         $orders = Order::with('items')
             ->where('table_id', $table->id)
-            ->where('status', '!=', 'paid')
+            ->whereNotIn('status', ['paid', 'cancelled'])   // <<< eklendi
             ->where('payment_status', '!=', 'paid')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Handle different view types
         $view = request('view');
 
         switch ($view) {
             case 'menu':
                 return view('customer.menu', compact('categories', 'table', 'orders'));
-
             case 'cart':
                 return view('customer.cart', compact('categories', 'table', 'orders'));
-
             case 'orders':
                 return view('customer.orders', compact('categories', 'table', 'orders'));
-
             default:
-                // First visit or dashboard request - show dashboard
                 return view('customer.dashboard', compact('categories', 'table', 'orders'));
         }
     }
 
-    /**
-     * Show products for a selected category on a dedicated page.
-     */
+
     public function category(string $token, string $category)
     {
         $table = Table::where('token', $token)->firstOrFail();
@@ -96,10 +91,12 @@ class CustomerOrderController extends Controller
             ->whereHas('products', function ($q) use ($hasProductActiveCol) {
                 $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1));
             })
-            ->with(['products' => function ($q) use ($hasProductActiveCol) {
-                $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1))
-                  ->orderBy('name');
-            }])
+            ->with([
+                'products' => function ($q) use ($hasProductActiveCol) {
+                    $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1))
+                        ->orderBy('name');
+                }
+            ])
             ->when(
                 Schema::hasColumn('categories', 'order_no'),
                 fn($q) => $q->orderBy('order_no')->orderBy('name'),
@@ -138,7 +135,7 @@ class CustomerOrderController extends Controller
         foreach ($cart as $pid => $row) {
             $tokenCart[] = [
                 'product_id' => $pid,
-                'qty' => (int)($row['qty'] ?? 1),
+                'qty' => (int) ($row['qty'] ?? 1),
             ];
         }
         session(["cart:{$token}" => $tokenCart]);
@@ -158,7 +155,7 @@ class CustomerOrderController extends Controller
         foreach ($cart as $pid => $row) {
             $tokenCart[] = [
                 'product_id' => $pid,
-                'qty' => (int)($row['qty'] ?? 1),
+                'qty' => (int) ($row['qty'] ?? 1),
             ];
         }
         session(["cart:{$token}" => $tokenCart]);
@@ -171,7 +168,10 @@ class CustomerOrderController extends Controller
         session()->forget('cart');
         session()->forget("cart:{$token}");
         // İsteğe bağlı: cache de temizle
-        try { \Illuminate\Support\Facades\Cache::forget("cart:{$token}"); } catch (\Throwable $e) {}
+        try {
+            \Illuminate\Support\Facades\Cache::forget("cart:{$token}");
+        } catch (\Throwable $e) {
+        }
         return back();
     }
 
@@ -217,7 +217,10 @@ class CustomerOrderController extends Controller
                 'price' => $row['price'],
                 'line_total' => $row['price'] * $row['qty'],
             ]);
-            Product::find($pid)?->decrement('stock_quantity', $row['qty']);
+            $product = Product::find($pid);
+            if ($product) {
+                $product->decrement('stock_quantity', $row['qty']);
+            }
         }
 
         $table->update(['status' => 'occupied']);
@@ -255,6 +258,7 @@ class CustomerOrderController extends Controller
 
         $total = Order::where('table_id', $table->id)
             ->where('payment_status', 'unpaid')
+            ->where('status', '!=', 'cancelled')   // <<< eklendi
             ->sum('total_amount');
 
         if ($total <= 0) {
@@ -264,12 +268,13 @@ class CustomerOrderController extends Controller
         Payment::create([
             'table_id' => $table->id,
             'total_amount' => $total,
-            'method' => 'cash', // şimdilik sabit, ileride online seçilebilir
+            'method' => 'cash',
             'status' => 'pending',
         ]);
 
         return back()->with('success', 'Ödeme isteğiniz alındı, garson yanınıza gelecek.');
     }
+
 
     /**
      * Garson paneli cache'ini temizle

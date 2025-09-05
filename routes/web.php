@@ -218,7 +218,8 @@ Route::prefix('waiter')->name('waiter.')->group(function () {
         Route::get('/calls', [WaiterController::class, 'calls'])->name('calls');
         Route::post('/calls/{call}/respond', [WaiterController::class, 'respondToCall'])->name('calls.respond');
         Route::delete('/calls/{call}', [WaiterController::class, 'deleteCall'])->name('calls.delete');
-
+        Route::post('/waiter/orders/cancel-items', [WaiterController::class, 'cancelItems'])
+            ->name('waiter.orders.cancel-items');
 
 
     });

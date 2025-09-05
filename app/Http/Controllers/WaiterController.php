@@ -54,7 +54,7 @@ class WaiterController extends Controller
                 ->with([
                     'active_order' => function ($q) {
                         $q->select(['id', 'table_id', 'status', 'total_amount', 'customer_name', 'created_at'])
-                            ->whereNotIn('status', ['paid', 'canceled']);
+                            ->whereNotIn('status', ['paid', 'cancelled']); // <<<<<< changed
                     }
                 ]);
 
@@ -76,7 +76,7 @@ class WaiterController extends Controller
             foreach ($tables as $t) {
                 $t->active_total_amount = \App\Models\Order::query()
                     ->where('table_id', $t->id)
-                    ->whereNotIn('status', ['paid', 'canceled'])
+                    ->whereNotIn('status', ['paid', 'cancelled']) // <<<<<< changed
                     ->sum('total_amount');
             }
 
@@ -93,7 +93,7 @@ class WaiterController extends Controller
                 ->whereHas('table', function ($q) use ($user) {
                     $q->where('waiter_id', $user->id);
                 })
-                ->whereNotIn('status', ['paid', 'canceled'])
+                ->whereNotIn('status', ['paid', 'cancelled']) // <<<<<< changed
                 ->latest('id')
                 ->get();
 
@@ -118,6 +118,7 @@ class WaiterController extends Controller
 
         return view('waiter.dashboard', compact('tables', 'activeCalls', 'activeOrders'));
     }
+
 
 
     // Masa detay sayfası
@@ -146,7 +147,7 @@ class WaiterController extends Controller
             $activeOrders = Order::query()
                 ->select(['id', 'table_id', 'status', 'total_amount', 'customer_name', 'created_at', 'updated_at'])
                 ->where('table_id', $table->id)
-                ->whereNotIn('status', ['paid', 'canceled'])
+                ->whereNotIn('status', ['paid', 'cancelled']) // <<<<<< changed
                 ->orderByDesc('id')
                 ->with([
                     'items' => function ($q) {
@@ -180,14 +181,17 @@ class WaiterController extends Controller
         $currentOrder = $data['currentOrder'];
         $activeOrders = $data['activeOrders'];
         $pastOrders = $data['pastOrders'];
-        // Bu masaya ait, aktif (paid/canceled değil) TÜM sipariş KALEMLERİ
+
+        // Bu masaya ait, aktif (paid/cancelled değil) TÜM sipariş KALEMLERİ
         $flatItems = OrderItem::with([
             'product:id,name,price',
             'order:id,table_id,status,customer_name,created_at'
         ])
+            // (İstersen burada iptal edilen kalemleri gizlemek için şu satırı da ekleyebilirsin:)
+            // ->where('status','!=','cancelled')
             ->whereHas('order', function ($q) use ($table) {
                 $q->where('table_id', $table->id)
-                    ->whereNotIn('status', ['paid', 'canceled']);
+                    ->whereNotIn('status', ['paid', 'cancelled']); // <<<<<< changed
             })
             ->orderByDesc('id')
             ->get();
@@ -206,6 +210,32 @@ class WaiterController extends Controller
             'flatItems' => $flatItems,
             'flatTotal' => $flatTotal,
         ]);
+    }
+
+    //Sipariş iptal etme
+    public function cancelItems(Request $request)
+    {
+        $request->validate([
+            'item_ids' => 'required|array',
+            'item_ids.*' => 'exists:order_items,id',
+        ]);
+
+        foreach ($request->item_ids as $id) {
+            $item = \App\Models\OrderItem::find($id);
+            if ($item && $item->status !== 'cancelled') {
+                $item->status = 'cancelled';
+                $item->save();
+
+                // Eğer siparişteki tüm kalemler iptal olduysa, order da iptal edilsin
+                $order = $item->order;
+                if ($order->items()->where('status', '!=', 'cancelled')->count() === 0) {
+                    $order->status = 'cancelled';
+                    $order->save();
+                }
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 
     // Sipariş durumunu güncelle
@@ -249,7 +279,8 @@ class WaiterController extends Controller
         }
 
         // Status validation
-        if (!in_array($to, ['pending', 'preparing', 'delivered', 'paid', 'canceled', 'refunded'])) {
+        // Status validation
+        if (!in_array($to, ['pending', 'preparing', 'delivered', 'paid', 'cancelled', 'refunded'])) { // <<<<<< changed
             return response()->json([
                 'success' => false,
                 'message' => 'Geçersiz status değeri: ' . $to
@@ -378,6 +409,7 @@ class WaiterController extends Controller
             // Cache::flush();
         }
     }
+
 
     // Garson çağrıları listesi
     public function calls()
