@@ -96,14 +96,14 @@ php artisan key:generate --ansi
 
 SQLite için:
 
-1. database/database.sqlite dosyasını oluşturun (Eğer dosya yoksa migration sırasında Artisan otomatik olarak soracaktır, yes diyebilirsiniz.).
+1. database/database.sqlite dosyasını oluşturun. (Eğer dosya yoksa migration sırasında Artisan otomatik olarak soracaktır, yes diyebilirsiniz.)
 2. Migration’ları çalıştırın:
 
 ```bash
 php artisan migrate
 ```
 
-![Kurulum Ekranı](docs/image.png)
+![Kurulum Ekranı](docs/image2.png)
 
 4. Demo verileri yüklemek için (isteğe bağlı):
 
@@ -138,6 +138,8 @@ php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 Uygulama artık http://127.0.0.1:8000 adresinde çalışacaktır.
+
+![Kurulum Ekranı](docs/image3.png)
 
 ## Sık Karşılaşılan Hatalar
 
