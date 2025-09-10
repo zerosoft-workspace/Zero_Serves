@@ -60,7 +60,7 @@
 ### Adım 1: Projeyi Klonlayın
 
 ```bash
-git clone https://github.com/kullanici/zeroserves.git
+git clone https://github.com/zerosoft-workspace/Zero_Serves.git
 cd Zero_Serves
 ```
 
