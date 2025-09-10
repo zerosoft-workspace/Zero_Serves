@@ -72,7 +72,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'multi.auth:ad
 
     Route::prefix('tables')
         ->name('tables.')
-        ->controller(\App\Http\Controllers\Admin\TableController::class)
+        ->controller(AdminTableController::class)
         ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::post('/', 'store')->name('store');
@@ -174,12 +174,12 @@ Route::post('/table/{token}/checkout', [CustomerOrderController::class, 'checkou
 Route::post('/table/{token}/call-waiter', [CustomerOrderController::class, 'callWaiter'])->name('customer.call');
 Route::post('/table/{token}/pay', [CustomerOrderController::class, 'pay'])->name('customer.pay');
 
-Route::get('/table/{token}/cart', [\App\Http\Controllers\CustomerCartController::class, 'view'])
+Route::get('/table/{token}/cart', [CustomerCartController::class, 'view'])
     ->name('customer.cart.view');
-Route::get('/table/{token}/cart/items', [\App\Http\Controllers\CustomerCartController::class, 'items'])
+Route::get('/table/{token}/cart/items', [CustomerCartController::class, 'items'])
     ->name('customer.cart.items');
 
-Route::get('/table/{token}/menu/{category}', [\App\Http\Controllers\CustomerOrderController::class, 'category'])
+Route::get('/table/{token}/menu/{category}', [CustomerOrderController::class, 'category'])
     ->name('customer.menu');
 /*
 |--------------------------------------------------------------------------
@@ -235,8 +235,14 @@ if (config('app.debug')) {
 
 // (isteğe bağlı) debug logout
 Route::get('/_force_logout', function (\Illuminate\Http\Request $request) {
-    \Illuminate\Support\Facades\Auth::logout();
+    Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
     return 'forced logout';
 });
+
+// /login -> tercih edilen panel login'i
+Route::get('/login', function () {
+    return redirect()->route('admin.login');
+})->name('login');
+

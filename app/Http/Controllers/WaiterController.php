@@ -74,7 +74,7 @@ class WaiterController extends Controller
 
             // Her masa için aktif (ödenmemiş) tüm siparişlerin toplam tutarı
             foreach ($tables as $t) {
-                $t->active_total_amount = \App\Models\Order::query()
+                $t->active_total_amount = Order::query()
                     ->where('table_id', $t->id)
                     ->whereNotIn('status', ['paid', 'cancelled']) // <<<<<< changed
                     ->sum('total_amount');
@@ -221,7 +221,7 @@ class WaiterController extends Controller
         ]);
 
         foreach ($request->item_ids as $id) {
-            $item = \App\Models\OrderItem::find($id);
+            $item = OrderItem::find($id);
             if ($item && $item->status !== 'cancelled') {
                 $item->status = 'cancelled';
                 $item->save();
@@ -295,7 +295,7 @@ class WaiterController extends Controller
             'from' => $from,
             'to' => $to,
             'can_transition' => $order->canTransitionTo($to, 'waiter'),
-            'waiter_transitions' => \App\Models\Order::$TRANSITIONS['waiter'] ?? []
+            'waiter_transitions' => Order::$TRANSITIONS['waiter'] ?? []
         ]);
 
         if (!$order->canTransitionTo($to, 'waiter')) {
@@ -304,7 +304,7 @@ class WaiterController extends Controller
                 'message' => "Geçersiz durum geçişi: {$from} -> {$to}",
                 'from' => $from,
                 'to' => $to,
-                'allowed_transitions' => \App\Models\Order::$TRANSITIONS['waiter'][$from] ?? []
+                'allowed_transitions' => Order::$TRANSITIONS['waiter'][$from] ?? []
             ], 422);
         }
 

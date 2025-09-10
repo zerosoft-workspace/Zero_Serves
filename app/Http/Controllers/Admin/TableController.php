@@ -216,7 +216,7 @@ class TableController extends Controller
     protected function buildQrItems($tables)
     {
         return $tables->map(function ($table) {
-            $url = \App\Helpers\NetworkHelper::getTableQrUrl($table->token);
+            $url = NetworkHelper::getTableQrUrl($table->token);
 
             // SVG üret
             $svg = \QrCode::format('svg')
