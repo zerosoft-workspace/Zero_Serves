@@ -60,8 +60,8 @@
 ### Adım 1: Projeyi Klonlayın
 
 ```bash
-git clone https://github.com/yourusername/zeroserves.git
-cd zeroserves
+git clone https://github.com/kullanici/zeroserves.git
+cd Zero_Serves
 ```
 
 ### Adım 2: Bağımlılıkları Yükleyin
@@ -69,40 +69,116 @@ cd zeroserves
 ```bash
 # PHP bağımlılıkları
 composer install
-
-# Frontend bağımlılıkları
-npm install
 ```
 
-### Adım 3: Ortam Değişkenlerini Ayarlayın
+Eğer eksik uzantı hatası alırsanız (örneğin, ext-gd):
+
+1. php.ini dosyasını açın (örneğin, XAMPP için C:\xampp\php\php.ini).
+2. ;extension=gd satırındaki ; işaretini kaldırarak extension=gd yapın.
+3. Web sunucusunu (Apache/Nginx) yeniden başlatın.
+4. Gerekirse bağımlılıkları güncelleyin:
 
 ```bash
-cp .env.example .env
-php artisan key:generate
+composer update
+composer install
+```
+
+### Adım 3: Ortam Dosyasını Hazırlayın
+
+Ortam dosyasını kopyalayın ve uygulama anahtarını oluşturun:
+
+```bash
+copy .env.example .env
+php artisan key:generate --ansi
 ```
 
 ### Adım 4: Veritabanını Hazırlayın
 
+SQLite için:
+
+1. database/database.sqlite dosyasını oluşturun (Eğer dosya yoksa migration sırasında Artisan otomatik olarak soracaktır, yes diyebilirsiniz.).
+2. Migration’ları çalıştırın:
+
 ```bash
-# SQLite için
-touch database/database.sqlite
-
-# Migration'ları çalıştırın
 php artisan migrate
+```
 
-# Demo verileri yükleyin
+![Kurulum Ekranı](docs/image.png)
+
+4. Demo verileri yüklemek için (isteğe bağlı):
+
+```bash
 php artisan db:seed
 ```
 
-### Adım 5: Uygulamayı Başlatın
+MySQL/PostgreSQL için:
+
+-   .env dosyasında DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME ve DB_PASSWORD ayarlarını yapılandırın.
+-   Migration’ları çalıştırın:
 
 ```bash
-# Development server
-php artisan serve
-
-# Frontend build (ayrı terminal)
-npm run dev
+php artisan migrate
 ```
+
+### Adım 5: Storage Link ve Cache Temizleme
+
+Depolama bağlantısını oluşturun ve önbelleği temizleyin:
+
+```bash
+php artisan storage:link
+php artisan optimize:clear
+```
+
+### Adım 6: Uygulamayı Başlatın
+
+Geliştirme sunucusunu başlatın:
+
+```bash
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Uygulama artık http://127.0.0.1:8000 adresinde çalışacaktır.
+
+## Sık Karşılaşılan Hatalar
+
+-   **ext-gd Hatası:** php.ini dosyasında extension=gd satırını aktifleştirin ve sunucuyu yeniden başlatın.
+-   **SQLite Dosyası Bulunamadı:** database/database.sqlite dosyasını manuel olarak oluşturun veya php artisan migrate sırasında Artisan’ın otomatik oluşturma önerisini kabul edin (yes).
+-   **Bağlantı Hatası:** .env dosyasındaki veritabanı ayarlarını kontrol edin.
+
+## 📧 Mail Yapılandırması
+
+ZeroServes, rezervasyon bildirimleri ve diğer e-posta işlemleri için SMTP tabanlı bir mail sistemi kullanır. .env dosyasında mail ayarlarını yapılandırmanız gerekir.
+
+### 1) Gmail için Yapılandırma
+
+Gmail kullanmak için bir App Password oluşturmanız gerekiyor:
+
+1. Gmail hesabınızda İki Adımlı Doğrulama’yı etkinleştirin.
+2. Google Hesap Ayarları → Güvenlik → Uygulama Şifreleri bölümüne gidin.
+3. Yeni bir uygulama şifresi oluşturun ve 16 haneli şifreyi not edin.
+
+.env dosyasına aşağıdaki ayarları ekleyin:
+
+````ini
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your-email@gmail.com
+MAIL_FROM_NAME="ZeroServes"
+
+
+### 1) Mail Testi
+
+Mail yapılandırmasını test etmek için:
+
+```bash
+php artisan mail:send-test --to=test@example.com
+````
+
+**Not: Mail gönderimi çalışmıyorsa, .env dosyasındaki ayarları kontrol edin ve internet bağlantınızı doğrulayın.**
 
 ## 👥 Kullanıcı Rolleri ve Paneller
 
