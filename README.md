@@ -161,7 +161,7 @@ Gmail kullanmak için bir App Password oluşturmanız gerekiyor:
 
 .env dosyasına aşağıdaki ayarları ekleyin:
 
-````ini
+```ini
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
@@ -171,6 +171,7 @@ MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=your-email@gmail.com
 MAIL_FROM_NAME="ZeroServes"
 
+```
 
 ### 1) Mail Testi
 
@@ -178,7 +179,7 @@ Mail yapılandırmasını test etmek için:
 
 ```bash
 php artisan mail:send-test --to=test@example.com
-````
+```
 
 **Not: Mail gönderimi çalışmıyorsa, .env dosyasındaki ayarları kontrol edin ve internet bağlantınızı doğrulayın.**
 
