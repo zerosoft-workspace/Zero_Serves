@@ -134,7 +134,7 @@ php artisan optimize:clear
 Geliştirme sunucusunu başlatın:
 
 ```bash
-php artisan serve --host=127.0.0.1 --port=8000
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
 Uygulama artık http://127.0.0.1:8000 adresinde çalışacaktır.
