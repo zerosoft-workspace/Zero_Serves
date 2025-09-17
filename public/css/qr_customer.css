@@ -1582,3 +1582,87 @@ body.page-cart .btn-light {
         display: block;
     }
 }
+/* --- Button busy/success states --- */
+.add-btn.is-busy,
+.order-btn.is-busy {
+    pointer-events: none;
+    opacity: 0.65;
+    filter: saturate(0.8);
+}
+
+.add-btn.is-success {
+    /* 2 sn'lik başarı anında yeşil geçiş tonu (isteğe bağlı) */
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35) !important;
+}
+/* Modal sepette tek ürün silme butonu */
+.item-remove {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.item-remove:hover {
+    background: rgba(239, 68, 68, 0.35); /* kırmızımsı vurgulu */
+}
+.item-remove i {
+    pointer-events: none;
+}
+/* Sağ blok düzeni */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Masaüstü: logo | menü (ortada) | sağ blok */
+@media (min-width: 769px) {
+    .nav {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 16px;
+    }
+    .nav .nav-menu {
+        justify-self: center;
+    }
+    .nav .nav-actions {
+        justify-self: end;
+    }
+}
+
+/* Mobil: klasik flex, buton yine sağda kalsın */
+@media (max-width: 768px) {
+    .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    /* İstersen mobilde de göster: aşağıdaki satırı kaldırıp
+     HTML’deki 'hidden sm:inline-flex'i 'inline-flex' yap. */
+    /* .btn-call-waiter{ display:none; } */
+}
+/* Header'daki Garson butonunu kompakt yap */
+.header .btn-call-waiter {
+    padding: 6px 10px; /* daha az iç boşluk */
+    font-size: 0.85rem; /* yazı boyutu */
+    line-height: 1; /* dikey hizalama */
+    height: 34px; /* buton yüksekliği */
+    border-radius: 10px; /* köşe yarıçapı */
+    gap: 6px; /* ikon–metin arası */
+}
+.header .btn-call-waiter i {
+    font-size: 0.9rem; /* ikon boyutu */
+}
+
+/* Sağ blok aralığını da biraz kıs */
+.nav-actions {
+    gap: 8px;
+}

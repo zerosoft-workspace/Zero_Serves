@@ -40,6 +40,7 @@
                 <i class="fas fa-qrcode"></i>
                 {{ $table->name ?? 'Dijital Menü' }}
             </div>
+
             <button class="mobile-menu-toggle" id="mobileToggle" aria-label="Menüyü Aç/Kapat">
                 <i class="fas fa-bars"></i>
             </button>
@@ -107,6 +108,42 @@
     </div>
 
     <script>
+        function btnMarkBusy(btn, html) {
+            if (!btn) return;
+            if (!btn.dataset._oldHtml) btn.dataset._oldHtml = btn.innerHTML;
+            btn.classList.add('is-busy');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.disabled = true;
+            if (html) btn.innerHTML = html;
+        }
+        function btnClearBusy(btn) {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('is-busy', 'is-success');
+            if (btn.dataset._oldHtml) {
+                btn.innerHTML = btn.dataset._oldHtml;
+                delete btn.dataset._oldHtml;
+            }
+        }
+        /* Ekle butonu için: 2 sn kilitle + ✓ göster, sonra geri al */
+        function flashAddSuccess(btn, duration = 2000) {
+            btnMarkBusy(btn, '<i class="fas fa-check"></i> Eklendi');
+            btn.classList.add('is-success');
+            setTimeout(() => btnClearBusy(btn), duration);
+        }
+        // ÜRÜNÜ TAMAMEN SİL (endpoint tek tek 1 azaltıyor; qty kadar çağırıyoruz)
+        async function removeItemAll(productId, qty) {
+            const count = Number(qty) || 1;
+            for (let i = 0; i < count; i++) {
+                await fetch(ROUTES.remove.replace('__ID__', productId), {
+                    method: 'POST',
+                    headers: csrfHeader()
+                }).catch(() => { });
+            }
+            await loadCart();
+        }
+
         // ===== Backend sabitleri =====
         const TOKEN = @json($table->token);
         const ROUTES = {
@@ -157,22 +194,32 @@
                     const row = document.createElement('div');
                     row.className = 'cart-card p-3';
                     row.innerHTML = `
-            <div class="flex items-center gap-4">
-              <div class="flex-1">
-                <h3 class="font-semibold">${it.name}</h3>
-                <p class="text-orange-500 font-bold">${Number(it.price).toFixed(2)} ₺</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="qty-btn minus">−</button>
-                <span class="px-2 font-bold">${it.quantity}</span>
-                <button class="qty-btn plus">+</button>
-              </div>
-            </div>
-          `;
+    <div class="flex items-center gap-4">
+      <div class="flex-1">
+        <h3 class="font-semibold">${it.name}</h3>
+        <p class="text-orange-500 font-bold">${Number(it.price).toFixed(2)} ₺</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- TEK ÜRÜNÜ SİL -->
+        <button class="item-remove" aria-label="Ürünü kaldır">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+
+        <button class="qty-btn minus">−</button>
+        <span class="px-2 font-bold">${it.quantity}</span>
+        <button class="qty-btn plus">+</button>
+      </div>
+    </div>
+  `;
+
+                    // olaylar
                     row.querySelector('.minus').addEventListener('click', () => changeQty(it.id, -1));
                     row.querySelector('.plus').addEventListener('click', () => changeQty(it.id, +1));
+                    row.querySelector('.item-remove').addEventListener('click', () => removeItemAll(it.id, it.quantity));
+
                     cartList.appendChild(row);
                 });
+
             }
             toggleActionButtons(!(items && items.length));
             sumTotal.textContent = (Number(total).toFixed(2)) + ' ₺';
@@ -237,15 +284,21 @@
 
         orderBtn.addEventListener('click', async () => {
             if (orderBtn.disabled) return;
-            const name = await askName();
-            if (!name) return;
-            await fetch(ROUTES.checkout, {
-                method: 'POST', headers: csrfHeader(),
-                body: JSON.stringify({ customer_name: name, confirm: true })
-            }).catch(() => null);
-            await loadCart();
-            showToast('Siparişiniz başarıyla iletildi.');
+            btnMarkBusy(orderBtn, '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...');
+            try {
+                const name = await askName();
+                if (!name) return;
+                await fetch(ROUTES.checkout, {
+                    method: 'POST', headers: csrfHeader(),
+                    body: JSON.stringify({ customer_name: name, confirm: true })
+                }).catch(() => null);
+                await loadCart();
+                showToast('Siparişiniz başarıyla iletildi.');
+            } finally {
+                btnClearBusy(orderBtn);
+            }
         });
+
 
         function showToast(message) {
             const t = document.getElementById('toast');

@@ -39,7 +39,29 @@
                         href="{{ route('customer.table.token', ['token' => $table->token, 'view' => 'orders']) }}">Siparişlerim</a>
                 </li>
             </ul>
-            <button class="mobile-menu-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+            {{-- SAĞ BLOK --}}
+            <div class="nav-actions">
+                <div class="nav-buttons">
+                    <button id="backBtn" class="back-btn hidden">
+                        <i class="fas fa-arrow-left"></i> Geri
+                    </button>
+                    {{-- <div class="text-sm text-gray-400 ml-4">
+                        <i class="fas fa-qrcode mr-2"></i>
+                        {{ $table->name ?? 'Dijital Menü' }}
+                    </div> --}}
+                </div>
+
+                {{-- Garson çağır (mobilden gizli; isterse hidden’ı kaldırabilirsin) --}}
+                <button class="btn-secondary btn-call-waiter  sm:inline-flex items-center gap-2 text-black"
+                    data-url="{{ route('customer.call', ['token' => $table->token]) }}" type="button">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span>Garson</span>
+                </button>
+
+                <button class="mobile-menu-toggle" id="mobileToggle" aria-label="Menüyü Aç/Kapat">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
         </nav>
     </header>
 
@@ -201,6 +223,65 @@
     @include('layouts.partials.public-footer')
 
     <script>
+        (function setupGlobalCallWaiter() {
+            function _csrfHeader() {
+                const el = document.querySelector('meta[name="csrf-token"]');
+                return { 'X-CSRF-TOKEN': el ? el.content : '', 'Accept': 'application/json', 'Content-Type': 'application/json' };
+            }
+            function _toast(msg) {
+                if (typeof showToast === 'function') return showToast(msg);
+                // basit fallback
+                try {
+                    let t = document.getElementById('toast');
+                    if (!t) { alert(msg); return; }
+                    t.textContent = msg || 'İşlem başarılı';
+                    t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 2000);
+                } catch (_) { alert(msg); }
+            }
+            document.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.btn-call-waiter');
+                if (!btn) return;
+
+                if (window.btnMarkBusy) btnMarkBusy(btn, '<i class="fa-solid fa-bell-concierge fa-shake"></i> Çağırılıyor...');
+                else btn.disabled = true;
+
+                try {
+                    const url = btn.dataset.url;
+                    await fetch(url, { method: 'POST', headers: _csrfHeader() });
+                    _toast('Garson çağrınız iletildi. Lütfen bekleyiniz.');
+                } catch (_) {
+                    _toast('Bir sorun oldu, tekrar dener misiniz?');
+                } finally {
+                    if (window.btnClearBusy) btnClearBusy(btn);
+                    else btn.disabled = false;
+                }
+            });
+        })();
+        function btnMarkBusy(btn, html) {
+            if (!btn) return;
+            if (!btn.dataset._oldHtml) btn.dataset._oldHtml = btn.innerHTML;
+            btn.classList.add('is-busy');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.disabled = true;
+            if (html) btn.innerHTML = html;
+        }
+        function btnClearBusy(btn) {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('is-busy', 'is-success');
+            if (btn.dataset._oldHtml) {
+                btn.innerHTML = btn.dataset._oldHtml;
+                delete btn.dataset._oldHtml;
+            }
+        }
+        /* Ekle butonu için: 2 sn kilitle + ✓ göster, sonra geri al */
+        function flashAddSuccess(btn, duration = 2000) {
+            btnMarkBusy(btn, '<i class="fas fa-check"></i> Eklendi');
+            btn.classList.add('is-success');
+            setTimeout(() => btnClearBusy(btn), duration);
+        }
+
         // Header scroll efekti + mobil menü
         const headerEl = document.getElementById('header');
         window.addEventListener("scroll", () => headerEl.classList.toggle("scrolled", window.scrollY > 50));
@@ -232,26 +313,37 @@
         let cart = [];
 
         // Qty kontrolü
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.quantity-btn.plus')) {
-                const id = e.target.dataset.id;
+        document.addEventListener('click', async (e) => {
+            const plusBtn = e.target.closest('.quantity-btn.plus');
+            const minusBtn = e.target.closest('.quantity-btn.minus');
+
+            if (plusBtn) {
+                const id = plusBtn.dataset.id;
                 const span = document.querySelector('.qty-val[data-id="' + id + '"]');
-                const cur = Math.max(1, parseInt(span.textContent || '1', 10) + 1);
+                const cur = Math.max(1, parseInt(span?.textContent || '1', 10) + 1);
                 span.textContent = cur;
+                return;
             }
-            if (e.target.matches('.quantity-btn.minus')) {
-                const id = e.target.dataset.id;
+
+            if (minusBtn) {
+                const id = minusBtn.dataset.id;
                 const span = document.querySelector('.qty-val[data-id="' + id + '"]');
-                const cur = Math.max(1, parseInt(span.textContent || '1', 10) - 1);
+                const cur = Math.max(1, parseInt(span?.textContent || '1', 10) - 1);
                 span.textContent = cur;
+                return;
             }
-            if (e.target.matches('.add-btn')) {
-                const id = e.target.dataset.id || e.target.closest('.add-btn')?.dataset.id;
+
+            const addBtn = e.target.closest('.add-btn');
+            if (addBtn) {
+                if (addBtn.classList.contains('is-busy')) return;
+                const id = addBtn.dataset.id;
                 const span = document.querySelector('.qty-val[data-id="' + id + '"]');
                 const qty = Math.max(1, parseInt(span?.textContent || '1', 10));
-                addToCart(id, qty);
+                flashAddSuccess(addBtn, 2000);  // 2 sn “✓ Eklendi”
+                await addToCart(id, qty);
             }
         });
+
 
         async function addToCart(productId, qty = 1) {
             await fetch(ROUTES.add, { method: 'POST', headers: csrfHeader(), body: JSON.stringify({ product_id: productId, qty }) }).catch(() => { });
@@ -264,6 +356,18 @@
         async function clearCart() {
             await fetch(ROUTES.clear, { method: 'POST', headers: csrfHeader() }).catch(() => { });
             await loadCartFromServer(); updateCartUI(); cartModal.classList.remove('active');
+        }
+        // Ürünü TAMAMEN kaldır (mevcut /remove ucu 1 azaltıyor; qty kadar çağırıyoruz)
+        async function removeItemAll(productId) {
+            const it = cart.find(i => String(i.id) === String(productId));
+            if (!it) return;
+            for (let k = 0; k < it.quantity; k++) {
+                await fetch(ROUTES.remove.replace('__ID__', productId), {
+                    method: 'POST', headers: csrfHeader()
+                }).catch(() => { });
+            }
+            await loadCartFromServer();
+            updateCartUI();
         }
 
         function openNameModal(resolve) {
@@ -296,14 +400,29 @@
 
         async function checkout() {
             if (cart.length === 0) return;
-            const name = await askName(); if (!name) return;
-            const payload = {
-                customer_name: name,
-                items: cart.map(i => ({ product_id: i.id, quantity: i.quantity }))
-            };
-            await fetch(ROUTES.checkout, { method: 'POST', headers: csrfHeader(), body: JSON.stringify(payload) }).catch(() => { });
-            await loadCartFromServer(); cart = []; updateCartUI(); cartModal.classList.remove('active'); showToast('Siparişiniz başarıyla iletildi.');
+            const orderBtnEl = document.getElementById('orderBtn');
+            btnMarkBusy(orderBtnEl, '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...');
+
+            try {
+                const name = await askName();
+                if (!name) return;
+
+                const payload = {
+                    customer_name: name,
+                    items: cart.map(i => ({ product_id: i.id, quantity: i.quantity }))
+                };
+                await fetch(ROUTES.checkout, { method: 'POST', headers: csrfHeader(), body: JSON.stringify(payload) }).catch(() => { });
+
+                await loadCartFromServer();
+                cart = [];
+                updateCartUI();
+                cartModal.classList.remove('active');
+                showToast('Siparişiniz başarıyla iletildi.');
+            } finally {
+                btnClearBusy(orderBtnEl);
+            }
         }
+
 
         function updateCartUI() {
             const cartBadge = document.getElementById('cartBadge');
@@ -326,21 +445,32 @@
                 const row = document.createElement('div');
                 row.className = 'product-card cart-item';
                 row.innerHTML = `
-      <div class="p-4 flex items-center justify-between gap-4">
-        <div>
-          <h4 class="font-playfair font-bold text-base md:text-lg mb-1">${item.name}</h4>
-          <p class="text-orange-500 font-bold">${Number(item.price).toFixed(2)} ₺</p>
-        </div>
+    <div class="p-4 flex items-center justify-between gap-4">
+      <div>
+        <h4 class="font-playfair font-bold text-base md:text-lg mb-1">${item.name}</h4>
+        <p class="text-orange-500 font-bold">${Number(item.price).toFixed(2)} ₺</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="item-remove" data-id="${item.id}" aria-label="Ürünü kaldır">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
         <div class="quantity-control">
           <button class="quantity-btn" data-action="minus" data-id="${item.id}">−</button>
           <span class="px-3 font-bold">${item.quantity}</span>
           <button class="quantity-btn" data-action="plus" data-id="${item.id}">+</button>
         </div>
-      </div>`;
+      </div>
+    </div>
+  `;
+
                 row.querySelector('[data-action="minus"]').addEventListener('click', () => removeOne(item.id));
                 row.querySelector('[data-action="plus"]').addEventListener('click', () => addToCart(item.id, 1));
+                row.querySelector('.item-remove').addEventListener('click', () => removeItemAll(item.id));
+
                 cartItems.appendChild(row);
             });
+
         }
 
         async function loadCartFromServer() {

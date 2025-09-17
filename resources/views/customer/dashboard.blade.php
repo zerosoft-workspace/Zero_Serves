@@ -159,6 +159,21 @@
         class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg hidden">
         Siparişiniz başarıyla iletildi.
     </div>
+    <!-- İsim alma modalı -->
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <h3 class="font-playfair text-xl font-bold mb-2">Sipariş için adınızı giriniz</h3>
+            <p class="text-gray-400 text-sm mb-3">
+                Aynı masada birden fazla kişi sipariş verebilir. Hazırlık ve servis için isminize ihtiyaç duyuyoruz.
+            </p>
+            <input id="nameInput" type="text" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 mb-3"
+                placeholder="Örn: Mehmet" maxlength="100" />
+            <div class="grid grid-cols-2 gap-3">
+                <button id="nameCancel" class="back-btn justify-center">İptal</button>
+                <button id="nameConfirm" class="add-btn justify-center">Devam Et</button>
+            </div>
+        </div>
+    </div>
 
     {{-- Backend’den gelen veriler --}}
     @php
@@ -194,6 +209,31 @@
     @include('layouts.partials.public-footer')
 
     <script>
+        function btnMarkBusy(btn, html) {
+            if (!btn) return;
+            if (!btn.dataset._oldHtml) btn.dataset._oldHtml = btn.innerHTML;
+            btn.classList.add('is-busy');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.disabled = true;
+            if (html) btn.innerHTML = html;
+        }
+        function btnClearBusy(btn) {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('is-busy', 'is-success');
+            if (btn.dataset._oldHtml) {
+                btn.innerHTML = btn.dataset._oldHtml;
+                delete btn.dataset._oldHtml;
+            }
+        }
+        /* Ekle butonu için: 2 sn kilitle + ✓ göster, sonra geri al */
+        function flashAddSuccess(btn, duration = 2000) {
+            btnMarkBusy(btn, '<i class="fas fa-check"></i> Eklendi');
+            btn.classList.add('is-success');
+            setTimeout(() => btnClearBusy(btn), duration);
+        }
+
         // ====== Back-end sabitleri ======
         const TOKEN = @json($table->token);
         const ROUTES = {
@@ -295,10 +335,15 @@
                     const cur = Math.max(1, (parseInt(qtySpan.textContent || '1', 10) + 1));
                     qtySpan.textContent = String(cur);
                 });
-                div.querySelector('.add-btn').addEventListener('click', () => {
+                div.querySelector('.add-btn').addEventListener('click', async (ev) => {
+                    const btn = ev.currentTarget;
+                    if (btn.classList.contains('is-busy')) return;
+
                     const qty = Math.max(1, parseInt(qtySpan.textContent || '1', 10));
-                    addToCart(p.id, qty);
+                    flashAddSuccess(btn, 2000);           // 2 sn kilitle + ✓
+                    await addToCart(p.id, qty);           // mevcut fonksiyon
                 });
+
                 productGrid.appendChild(div);
                 setTimeout(() => div.classList.add('visible'), i * 100);
             });
@@ -328,16 +373,54 @@
 
         async function checkout() {
             if (cart.length === 0) return;
-            const payload = {
-                items: cart.map(i => ({ product_id: i.id, quantity: i.quantity }))
-            };
-            await fetch(ROUTES.checkout, {
-                method: 'POST', headers: csrfHeader(), body: JSON.stringify(payload)
-            }).catch(() => null);
-            await loadCartFromServer();
-            cart = []; updateCartUI(); cartModal.classList.remove('active');
-            showToast('Siparişiniz başarıyla iletildi.');
+            const orderBtnEl = document.getElementById('orderBtn');
+            btnMarkBusy(orderBtnEl, '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...');
+
+            try {
+                const name = await askName();
+                if (!name) return;
+
+                const payload = {
+                    customer_name: name,
+                    items: cart.map(i => ({ product_id: i.id, quantity: i.quantity }))
+                };
+
+                const res = await fetch(ROUTES.checkout, {
+                    method: 'POST',
+                    headers: csrfHeader(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const t = await res.text().catch(() => '');
+                    console.error('Checkout failed:', res.status, t);
+                    showToast('Sipariş gönderilemedi. Lütfen tekrar deneyin.');
+                    return; // ❗ Başarısızsa UI’yı temizleme
+                }
+
+                // Server sepeti temizlediyse burada boş gelecektir
+                await loadCartFromServer();
+                updateCartUI();
+                cartModal.classList.remove('active');
+                showToast('Siparişiniz başarıyla iletildi.');
+            } finally {
+                btnClearBusy(orderBtnEl);
+            }
         }
+
+        // Ürünü TAMAMEN kaldır (mevcut /remove ucu 1 azaltıyor; qty kadar çağırıyoruz)
+        async function removeItemAll(productId) {
+            const it = cart.find(i => String(i.id) === String(productId));
+            if (!it) return;
+            for (let k = 0; k < it.quantity; k++) {
+                await fetch(ROUTES.remove.replace('__ID__', productId), {
+                    method: 'POST', headers: csrfHeader()
+                }).catch(() => { });
+            }
+            await loadCartFromServer();
+            updateCartUI();
+        }
+
 
         // ====== Yardımcılar ======
         function findProduct(id) {
@@ -361,22 +444,34 @@
             }
             cart.forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center gap-4 bg-gray-800 rounded-lg p-3';
+                row.className = 'product-card cart-item';
                 row.innerHTML = `
-          <div class="flex-1">
-            <h4 class="font-medium">${item.name}</h4>
-            <p class="text-orange-500 font-bold">${Number(item.price).toFixed(2)} ₺</p>
-          </div>
-          <div class="quantity-control">
-            <button class="quantity-btn minus">−</button>
-            <span class="px-3 font-bold">${item.quantity}</span>
-            <button class="quantity-btn plus">+</button>
-          </div>
-        `;
-                row.querySelector('.minus').addEventListener('click', () => removeOne(item.id));
-                row.querySelector('.plus').addEventListener('click', () => addToCart(item.id, 1));
+    <div class="p-4 flex items-center justify-between gap-4">
+      <div>
+        <h4 class="font-playfair font-bold text-base md:text-lg mb-1">${item.name}</h4>
+        <p class="text-orange-500 font-bold">${Number(item.price).toFixed(2)} ₺</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="item-remove" data-id="${item.id}" aria-label="Ürünü kaldır">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+        <div class="quantity-control">
+          <button class="quantity-btn" data-action="minus" data-id="${item.id}">−</button>
+          <span class="px-3 font-bold">${item.quantity}</span>
+          <button class="quantity-btn" data-action="plus" data-id="${item.id}">+</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+                row.querySelector('[data-action="minus"]').addEventListener('click', () => removeOne(item.id));
+                row.querySelector('[data-action="plus"]').addEventListener('click', () => addToCart(item.id, 1));
+                row.querySelector('.item-remove').addEventListener('click', () => removeItemAll(item.id));
+
                 cartItems.appendChild(row);
             });
+
         }
         function showCartFab() { cartFab.classList.remove('hidden'); }
 
@@ -396,6 +491,37 @@
             t.classList.remove('hidden');
             setTimeout(() => t.classList.add('hidden'), 2000);
         }
+        function openNameModal(resolve) {
+            const modal = document.getElementById('nameModal');
+            const input = document.getElementById('nameInput');
+            if (!modal || !input) { resolve(null); return; }
+
+            modal.classList.add('active');
+            try { input.value = (localStorage.getItem('customer_name') || '').trim(); } catch (_) { }
+            input.focus();
+
+            const confirmBtn = document.getElementById('nameConfirm');
+            const cancelBtn = document.getElementById('nameCancel');
+
+            function cleanup() {
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                modal.removeEventListener('click', onBackdrop);
+            }
+            function onConfirm() {
+                const name = (input.value || '').trim();
+                if (name.length < 2) { input.focus(); input.select(); return; }
+                try { localStorage.setItem('customer_name', name); } catch (_) { }
+                modal.classList.remove('active'); cleanup(); resolve(name);
+            }
+            function onCancel() { modal.classList.remove('active'); cleanup(); resolve(null); }
+            function onBackdrop(e) { if (e.target === modal) onCancel(); }
+
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            modal.addEventListener('click', onBackdrop);
+        }
+        function askName() { return new Promise((resolve) => openNameModal(resolve)); }
 
         // ====== Modal ve butonlar ======
         document.getElementById('clearCartBtn').addEventListener('click', clearCart);
