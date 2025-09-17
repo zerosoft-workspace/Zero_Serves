@@ -12,192 +12,17 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+
+    {{-- Global --}}
     <link rel="stylesheet" href="{{ asset('css/public.css') }}">
 
+    {{-- Sayfaya özgü CSS --}}
+    <link rel="stylesheet" href="{{ asset('css/qr_customer.css') }}">
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <style>
-        .font-playfair {
-            font-family: 'Playfair Display', serif
-        }
-
-        .font-inter {
-            font-family: 'Inter', sans-serif
-        }
-
-        :root {
-            --primary: #ff6b35;
-            --primary-dark: #e55a2b;
-            --bg-dark: #0a0a0a;
-            --bg-card: #111214;
-            --text: #fff;
-            --text-muted: #a0a0a0;
-            --border: rgba(255, 255, 255, .1)
-        }
-
-        body {
-            background: var(--bg-dark);
-            color: var(--text)
-        }
-
-        .header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, .95);
-            z-index: 1000;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(255, 107, 53, .2);
-            backdrop-filter: blur(15px)
-        }
-
-        .nav {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px
-        }
-
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #ff6b35;
-            text-decoration: none
-        }
-
-        .nav-menu {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-            margin: 0;
-            padding: 0
-        }
-
-        .nav-menu a {
-            color: #fff;
-            text-decoration: none
-        }
-
-        .nav-menu a:hover {
-            color: #ff6b35
-        }
-
-        .mobile-menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: .5rem;
-            border-radius: 5px;
-            transition: .3s
-        }
-
-        .order-btn {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            padding: 14px 26px;
-            border-radius: 30px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px
-        }
-
-        .order-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(34, 197, 94, .4)
-        }
-
-        .back-btn {
-            background: rgba(255, 255, 255, .08);
-            padding: 10px 14px;
-            border-radius: 12px
-        }
-
-        .cart-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px
-        }
-
-        .qty-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 900
-        }
-
-        .divider {
-            border-top: 1px solid var(--border)
-        }
-
-        /* Disabled durum */
-        .is-disabled,
-        button:disabled {
-            opacity: .5;
-            pointer-events: none;
-            cursor: not-allowed !important;
-        }
-
-        /* Sticky footer */
-        html,
-        body {
-            height: 100%;
-        }
-
-        body {
-            min-height: 100svh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        main {
-            flex: 1;
-        }
-
-        footer,
-        .site-footer {
-            margin-top: auto;
-        }
-
-        /* İsim modalı */
-        .name-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:2000;padding:16px}
-        .name-modal.active{display:flex}
-        .name-card{background:#111214;border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:20px}
-        .name-card h3{font-weight:700;margin-bottom:8px}
-        .name-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:#fff}
-        .name-actions{display:flex;gap:10px;margin-top:12px}
-        .btn-light{background:rgba(255,255,255,.12);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-
-        @media (max-width:768px) {
-            .nav-menu {
-                display: none
-            }
-            .nav-menu.active {
-                display: flex;
-                position: absolute;
-                top: 64px;
-                right: 16px;
-                left: 16px;
-                background: rgba(0,0,0,.95);
-                border: 1px solid rgba(255,255,255,.1);
-                border-radius: 12px;
-                padding: 12px;
-                flex-direction: column;
-                gap: 12px;
-                z-index: 1100;
-            }
-            .mobile-menu-toggle { display: block }
-        }
-    </style>
 </head>
 
-<body class="font-inter">
-
+<body class="font-inter page-cart">
     {{-- Header --}}
     <header class="header">
         <nav class="nav">
@@ -222,7 +47,7 @@
     </header>
 
     {{-- Page --}}
-    <main class="max-w-4xl mx-auto px-4" style="padding-top:110px;padding-bottom:48px">
+    <main class="max-w-4xl mx-auto px-4">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="font-playfair text-3xl font-bold">Sepetim</h1>
@@ -265,7 +90,8 @@
 
     <div id="toast"
         class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg hidden">
-        Siparişiniz başarıyla iletildi.</div>
+        Siparişiniz başarıyla iletildi.
+    </div>
 
     {{-- İsim Modalı --}}
     <div id="nameModal" class="name-modal" aria-modal="true" role="dialog">
@@ -302,7 +128,6 @@
         const clearBtn = document.getElementById('clearBtn');
         const orderBtn = document.getElementById('orderBtn');
 
-        // Buton toggle
         function toggleActionButtons(disabled) {
             [clearBtn, orderBtn].forEach(btn => {
                 btn.disabled = disabled;
@@ -310,7 +135,6 @@
             });
         }
 
-        // Listeyi doldur
         async function loadCart() {
             try {
                 const res = await fetch(ROUTES.items);
@@ -381,7 +205,7 @@
             showToast('Garson çağrınız iletildi. Lütfen bekleyiniz.');
         });
 
-        // İsim modal yardımcıları
+        // İsim modal
         function openNameModal(resolve) {
             const modal = document.getElementById('nameModal');
             const input = document.getElementById('nameInput');
@@ -404,18 +228,12 @@
                 resolve(name);
             }
             function onCancel() { modal.classList.remove('active'); cleanup(); resolve(null); }
-            function onBackdrop(e){ if(e.target === modal){ onCancel(); } }
+            function onBackdrop(e) { if (e.target === modal) { onCancel(); } }
             confirmBtn.addEventListener('click', onConfirm);
             cancelBtn.addEventListener('click', onCancel);
             modal.addEventListener('click', onBackdrop);
         }
-
-        function askName() {
-            // Her sipariş verişte modal açılsın, varsa isim önceden doldurulsun
-            return new Promise((resolve) => {
-                openNameModal(resolve);
-            });
-        }
+        function askName() { return new Promise((resolve) => { openNameModal(resolve); }); }
 
         orderBtn.addEventListener('click', async () => {
             if (orderBtn.disabled) return;
@@ -438,12 +256,12 @@
         }
 
         // Mobil menü toggle
-        (function(){
+        (function () {
             const toggle = document.getElementById('mobileToggle');
             const menu = document.getElementById('navMenu');
             if (toggle && menu) {
-                toggle.addEventListener('click', ()=> menu.classList.toggle('active'));
-                menu.querySelectorAll('a').forEach(a=> a.addEventListener('click', ()=> menu.classList.remove('active')));
+                toggle.addEventListener('click', () => menu.classList.toggle('active'));
+                menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.remove('active')));
             }
         })();
 
