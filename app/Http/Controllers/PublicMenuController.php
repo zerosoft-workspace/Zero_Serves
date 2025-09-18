@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
 
@@ -9,36 +10,58 @@ class PublicMenuController extends Controller
 {
     public function index()
     {
-        // 5 dakikalık cache (isteğe göre artır/azalt)
-        $categories = Cache::remember('public_menu_categories_v1', 300, function () {
-            $hasProductActiveCol = schema()->hasColumn('products', 'is_active');
-            $hasCategoryActiveCol = schema()->hasColumn('categories', 'is_active');
+        
+        // 1) Versiyon tohumu: en son değişiklik zamanları + sayılar (toggle'ları da yakalar)
+        $hasProductActiveCol  = schema()->hasColumn('products', 'is_active');
+        $hasCategoryActiveCol = schema()->hasColumn('categories', 'is_active');
 
+        $prodActiveCount = $hasProductActiveCol
+            ? Product::where('is_active', 1)->count()
+            : Product::count();
+
+        $catActiveCount = $hasCategoryActiveCol
+            ? Category::where('is_active', 1)->count()
+            : Category::count();
+
+        $verSeed = implode('|', [
+            (string) Category::max('updated_at'),
+            (string) Category::max('deleted_at'),
+            (int) Category::count(),
+            (int) $catActiveCount,
+            (string) Product::max('updated_at'),
+            (string) Product::max('deleted_at'),
+            (int) Product::count(),
+            (int) $prodActiveCount,
+        ]);
+        $verHash = substr(md5($verSeed), 0, 12);
+        $cacheKey = "public_menu_categories_v1:{$verHash}";
+
+        // 2) Cache (5 dk). Versiyon değişince otomatik yeni key ile tazelenir.
+        $categories = Cache::remember($cacheKey, 300, function () use ($hasProductActiveCol, $hasCategoryActiveCol) {
             $query = Category::query()
-                // yalnızca aktif kategori (kolon varsa)
                 ->when($hasCategoryActiveCol, fn($q) => $q->where('is_active', 1))
-                // en az bir ürünü olan kategoriler
                 ->whereHas('products', function ($q) use ($hasProductActiveCol) {
                     $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1));
                 })
-                // ürünleri eager load + filtre + sıralama
                 ->with([
                     'products' => function ($q) use ($hasProductActiveCol) {
                         $q->when($hasProductActiveCol, fn($qq) => $qq->where('is_active', 1))
-                            ->orderBy('name');
+                          ->orderBy('name');
                     }
                 ])
-                // kategori sıralaması (order_no varsa önce onu kullan)
                 ->when(
                     schema()->hasColumn('categories', 'order_no'),
                     fn($q) => $q->orderBy('order_no')->orderBy('name'),
                     fn($q) => $q->orderBy('name')
                 );
 
-            return $query->get();
+            return $query->get(['id', 'name', 'image']);
         });
 
-        return view('menu', compact('categories'));
+        // İstersen testte tarayıcı/CDN cache'ini by-pass et:
+        return response()->view('menu', compact('categories'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+        // Prod'da üstteki header'ı kaldırabilirsin.
     }
 }
 

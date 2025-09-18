@@ -209,19 +209,21 @@
 
             <!-- Bölümler -->
             @forelse($categories as $cat)
-                @php
-                    // fallback isimler kategorilere sırayla eşlensin
-                    $fallbacks = [
-                        asset('images/menu/anayemek.jpg'),
-                        asset('images/menu/salata.jpg'),
-                        asset('images/menu/kahvalti.jpg'),
-                        asset('images/menu/icecek.jpg'),
-                        asset('images/menu/kahve.jpg'),
-                        asset('images/menu/tatli.jpg'),
+               @php
+                 // Kategori görseli varsa onu kullan, yoksa fallback
+                  $fallbacks = [
+                  asset('images/menu/anayemek.jpg'),
+                  asset('images/menu/salata.jpg'),
+                  asset('images/menu/kahvalti.jpg'),
+                  asset('images/menu/icecek.jpg'),
+                  asset('images/menu/kahve.jpg'),
+                asset('images/menu/tatli.jpg'),
+            ];
 
-                    ];
-                    $img = $fallbacks[$loop->index % count($fallbacks)];
-                @endphp
+               $fallback = $fallbacks[$loop->index % count($fallbacks)];    
+               $img = !empty($cat->image) ? asset('storage/'.$cat->image) : $fallback;
+            @endphp
+
 
                 @if($cat->products->count())
                     <section class="mb-16 md:mb-24" id="cat-{{ $cat->id }}">

@@ -76,31 +76,36 @@
                 @endphp
 
                 @forelse($cats as $category)
-                    @php
-                        $catName = $category->name ?? 'Kategori';
-                        $slug = $category->slug ?? \Illuminate\Support\Str::slug($catName);
-                        $fallbacks = [
-                            asset('images/menu/anayemek.jpg'),
-                            asset('images/menu/salata.jpg'),
-                            asset('images/menu/kahvalti.jpg'),
-                            asset('images/menu/icecek.jpg'),
-                            asset('images/menu/kahve.jpg'),
-                            asset('images/menu/tatli.jpg'),
-                        ];
-                        $img = $fallbacks[$loop->index % count($fallbacks)];
+                   @php
+                         $catName = $category->name ?? 'Kategori';
+                         $slug = $category->slug ?? \Illuminate\Support\Str::slug($catName);
+
+                        // Önce kategoriye yüklenen görseli kullan, yoksa fallback
+                         $fallbacks = [
+                         asset('images/menu/anayemek.jpg'),
+                         asset('images/menu/salata.jpg'),
+                         asset('images/menu/kahvalti.jpg'),
+                         asset('images/menu/icecek.jpg'),
+                         asset('images/menu/kahve.jpg'),
+                         asset('images/menu/tatli.jpg'),
+                    ];
+                        $fallback = $fallbacks[$loop->index % count($fallbacks)];
+                        $img = !empty($category->image) ? asset('storage/'.$category->image) : $fallback;
+
                         $isActive = (($activeCat?->id ?? null) === ($category->id ?? null)) ? 'active' : '';
                         $productCount = 0;
-                        if (isset($category->products)) {
-                            $productCount =
-                                method_exists($category->products, 'count')
-                                ? ($category->products?->count() ?? 0)
-                                : (is_iterable($category->products) ? count($category->products) : 0);
-                        }
-                        $href = $tableToken
-                            ? route('customer.menu', ['token' => $tableToken, 'category' => $slug])
-                            : 'javascript:void(0)';
-                        $disabledAttr = $tableToken ? '' : 'aria-disabled=true';
+                 if (isset($category->products)) {
+                        $productCount =
+                         method_exists($category->products, 'count')
+                         ? ($category->products?->count() ?? 0)
+                         : (is_iterable($category->products) ? count($category->products) : 0);
+                    }
+                      $href = $tableToken
+                      ? route('customer.menu', ['token' => $tableToken, 'category' => $slug])
+                      : 'javascript:void(0)';
+                       $disabledAttr = $tableToken ? '' : 'aria-disabled=true';
                     @endphp
+
 
                     <a href="{{ $href }}" {!! $disabledAttr !!} class="category-card {{ $isActive }}">
                         <img src="{{ $img }}" alt="{{ $catName }}" class="category-img">

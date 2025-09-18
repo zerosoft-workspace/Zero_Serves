@@ -16,16 +16,47 @@ use Illuminate\Support\Str;
 
 class CustomerOrderController extends Controller
 {
-    // Menü sayfası
-    public function index(string $token)
-    {
-        $table = Table::where('token', $token)->firstOrFail();
+   // Menü sayfası
+public function index(string $token)
+{
+    $table = Table::where('token', $token)->firstOrFail();
 
-        $categories = Category::with([
-            'products' => function ($q) {
-                $q->where('is_active', true);
-            }
-        ])->get();
+    $hasProdActive  = Schema::hasColumn('products', 'is_active');
+    $hasCatActive   = Schema::hasColumn('categories', 'is_active');
+
+    // ✅ Kategorileri image alanıyla, sadece aktif ve içinde aktif ürün olanlar
+    $categories = Category::query()
+        ->when($hasCatActive, fn($q) => $q->where('is_active', 1))
+        ->whereHas('products', function ($q) use ($hasProdActive) {
+            $q->when($hasProdActive, fn($qq) => $qq->where('is_active', 1));
+        })
+        ->with(['products' => function ($q) use ($hasProdActive) {
+            $q->when($hasProdActive, fn($qq) => $qq->where('is_active', 1));
+        }])
+        ->when(
+            Schema::hasColumn('categories', 'order_no'),
+            fn($q) => $q->orderBy('order_no')->orderBy('name'),
+            fn($q) => $q->orderBy('name')
+        )
+        ->get(['id','name','slug','image']); // 👈 image dahil
+
+    // Bu masanın aktif siparişleri (ödenen/iptal edilen yok)
+    $orders = Order::with('items')
+        ->where('table_id', $table->id)
+        ->whereNotIn('status', ['paid', 'cancelled'])
+        ->where('payment_status', '!=', 'paid')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    $view = request('view');
+    switch ($view) {
+        case 'menu':    return view('customer.menu',  compact('categories','table','orders'));
+        case 'cart':    return view('customer.cart',  compact('categories','table','orders'));
+        case 'orders':  return view('customer.orders',compact('categories','table','orders'));
+        default:        return view('customer.dashboard', compact('categories','table','orders'));
+    }
+}
+
 
         // Bu masanın aktif siparişleri:
         // - Ödenenler görünmesin

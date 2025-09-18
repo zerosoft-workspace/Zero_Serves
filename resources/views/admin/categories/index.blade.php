@@ -9,8 +9,6 @@
             <p class="text-muted mb-0">Kategorileri yönetin</p>
         </div>
 
-
-
         <button class="btn btn-primary d-md-none ms-2" type="button" data-bs-toggle="collapse"
             data-bs-target="#categoryForm">
             <i class="bi bi-plus-circle"></i> Yeni Kategori
@@ -44,14 +42,22 @@
         </div>
         <div class="collapse show" id="categoryForm">
             <div class="card-body">
-                <form method="POST" action="{{ route('admin.categories.store') }}" id="categoryAddForm">
+                <form method="POST" action="{{ route('admin.categories.store') }}" id="categoryAddForm" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Kategori Adı <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" placeholder="Kategori adını giriniz"
-                                required>
+                            <input type="text" name="name" class="form-control" placeholder="Kategori adını giriniz" required>
                         </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori Resmi</label>
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="mt-2">
+                            <img id="catPreview" src="" alt="Önizleme" class="img-thumbnail d-none" style="max-width:220px;">
+                            <button type="button" id="catPreviewClear" class="btn btn-sm btn-outline-secondary d-none mt-2">Önizlemeyi Temizle</button>
+                        </div>
+                    </div>
 
                         <div class="col-12">
                             <hr class="my-3">
@@ -168,7 +174,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
                 </div>
-                <form id="editCategoryForm" method="POST">
+                <form id="editCategoryForm" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="modal-body">
@@ -177,6 +183,14 @@
                                 <label class="form-label">Kategori Adı <span class="text-danger">*</span></label>
                                 <input type="text" name="name" id="edit_category_name" class="form-control" required>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">Kategori Resmi</label>
+                                <input type="file" name="image" class="form-control" accept="image/*">
+                            <div class="mt-2">
+                                <img id="editCatPreview" src="" alt="Önizleme" class="img-thumbnail d-none" style="max-width:220px;">
+                                <button type="button" id="editCatPreviewClear" class="btn btn-sm btn-outline-secondary d-none mt-2">Önizlemeyi Temizle</button>
+                            </div>
+                        </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -195,17 +209,14 @@
 
 @push('scripts')
     <script>
-        // Form temizleme
         function resetCategoryForm() {
             document.getElementById('categoryAddForm')?.reset();
         }
 
-        // Listeyi yenile
         function refreshCategories() {
             location.reload();
         }
 
-        // Düzenleme modalını doldur
         function editCategory(categoryId) {
             fetch(`/admin/categories/${categoryId}`)
                 .then(response => {
@@ -216,7 +227,6 @@
                     if (category.error) throw new Error(category.error);
 
                     document.getElementById('edit_category_name').value = category.name || '';
-
                     const form = document.getElementById('editCategoryForm');
                     form.action = `/admin/categories/${categoryId}`;
 
@@ -225,7 +235,6 @@
                 .catch(err => alert('Kategori bilgileri alınırken bir hata oluştu: ' + err.message));
         }
 
-        // Silme akışı (ürün sayısı uyarılı)
         function deleteCategory(categoryId) {
             fetch(`/admin/categories/${categoryId}`)
                 .then(r => r.json())
@@ -244,9 +253,9 @@
                     form.method = 'POST';
                     form.action = `/admin/categories/${categoryId}`;
                     form.innerHTML = `
-                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="_method" value="DELETE">
-                            `;
+                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="_method" value="DELETE">
+                    `;
                     document.body.appendChild(form);
                     form.submit();
                 })
@@ -256,27 +265,70 @@
                         form.method = 'POST';
                         form.action = `/admin/categories/${categoryId}`;
                         form.innerHTML = `
-                                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="_method" value="DELETE">
-                                `;
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="_method" value="DELETE">
+                        `;
                         document.body.appendChild(form);
                         form.submit();
                     }
                 });
         }
+                  document.addEventListener('DOMContentLoaded', function () {
+                  // --- Ekleme formu ---
+                  const addForm = document.getElementById('categoryAddForm');
+                  const addInput = addForm?.querySelector('input[name="image"]');
+                  const addImg   = document.getElementById('catPreview');
+                  const addClr   = document.getElementById('catPreviewClear');
 
-        // Basit form validasyon
-        document.addEventListener('DOMContentLoaded', function () {
-            const addForm = document.getElementById('categoryAddForm');
-            if (addForm) {
-                addForm.addEventListener('submit', function (e) {
-                    const nameInput = this.querySelector('input[name="name"]');
-                    if (!nameInput || !nameInput.value.trim()) {
-                        e.preventDefault();
-                        alert('Kategori adı gereklidir!');
-                    }
-                });
-            }
-        });
+                function showPreview(imgEl, clrBtn, file) {
+                 if (!file || !file.type.startsWith('image/')) return;
+                   const url = URL.createObjectURL(file);
+                   imgEl.src = url;
+                   imgEl.classList.remove('d-none');
+                   clrBtn.classList.remove('d-none');
+  }
+                 function clearPreview(imgEl, clrBtn, inputEl) {
+                 imgEl.src = '';
+                 imgEl.classList.add('d-none');
+                 clrBtn.classList.add('d-none');
+                 if (inputEl) inputEl.value = '';
+  }
+
+  addInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) { clearPreview(addImg, addClr, addInput); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Lütfen 5MB altında bir görsel seçin.'); clearPreview(addImg, addClr, addInput); return; }
+    showPreview(addImg, addClr, file);
+  });
+  addClr?.addEventListener('click', () => clearPreview(addImg, addClr, addInput));
+
+  // Form reset
+  window.resetCategoryForm = function () {
+    addForm?.reset();
+    clearPreview(addImg, addClr, addInput);
+  };
+
+  // --- Düzenleme modalı ---
+  const editForm = document.getElementById('editCategoryForm');
+  const editInput = editForm?.querySelector('input[name="image"]');
+  const editImg   = document.getElementById('editCatPreview');
+  const editClr   = document.getElementById('editCatPreviewClear');
+
+  editInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) { clearPreview(editImg, editClr, editInput); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Lütfen 5MB altında bir görsel seçin.'); clearPreview(editImg, editClr, editInput); return; }
+    showPreview(editImg, editClr, file);
+  });
+  editClr?.addEventListener('click', () => clearPreview(editImg, editClr, editInput));
+
+  // Modal açıldığında eski önizlemeyi temizle
+  const originalEditCategory = window.editCategory;
+  window.editCategory = function (categoryId) {
+    clearPreview(editImg, editClr, editInput);
+    originalEditCategory(categoryId);
+  };
+});
+
     </script>
 @endpush

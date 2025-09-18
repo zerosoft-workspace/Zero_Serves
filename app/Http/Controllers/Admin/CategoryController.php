@@ -30,15 +30,21 @@ class CategoryController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:100'
-        ]);
+{
+    $data = $request->validate([
+        'name'  => 'required|string|max:100',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+    ]);
 
-        Category::create(['name' => $request->name]);
-
-        return back()->with('success', 'Kategori eklendi');
+    if ($request->hasFile('image')) {
+        $data['image'] = $request->file('image')->store('categories', 'public');
     }
+
+    Category::create($data);
+
+    return back()->with('success', 'Kategori eklendi');
+}
+
 
     /**
      * Silme uyarısı ve modal doldurma için sade bir JSON döner
@@ -59,17 +65,26 @@ class CategoryController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $category = Category::findOrFail($id);
+{
+    $category = Category::findOrFail($id);
 
-        $request->validate([
-            'name' => 'required|string|max:100'
-        ]);
+    $data = $request->validate([
+        'name'  => 'required|string|max:100',
+        'image' => 'nullable|image|max:2048',
+    ]);
 
-        $category->update(['name' => $request->name]);
-
-        return back()->with('success', 'Kategori güncellendi');
+    if ($request->hasFile('image')) {
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+        $data['image'] = $request->file('image')->store('categories', 'public');
     }
+
+    $category->update($data);
+
+    return back()->with('success', 'Kategori güncellendi');
+}
+
 
     public function destroy($id)
     {

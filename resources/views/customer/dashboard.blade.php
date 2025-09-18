@@ -92,7 +92,7 @@
                         asset('images/menu/kahve.jpg'),
                         asset('images/menu/tatli.jpg'),
                     ];
-                    $img = $fallbacks[$loop->index % count($fallbacks)];
+                    $img = !empty($cat->image) ? asset('storage/'.$cat->image) : $fallbacks[$loop->index % count($fallbacks)];
                     $slug = $cat->slug ?? \Illuminate\Support\Str::slug($cat->name);
                 @endphp
 
