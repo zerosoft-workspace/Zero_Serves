@@ -7,6 +7,8 @@
   <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge" alt="Status">
 </div>
 
+
+
 ## 📋 Proje Hakkında
 
 **ZeroServes**, modern restoran işletmeleri için geliştirilmiş kapsamlı bir yönetim sistemidir. QR kod tabanlı sipariş sistemi, çoklu kullanıcı rolleri, gerçek zamanlı stok takibi ve gelişmiş oturum yönetimi ile restoran operasyonlarını dijitalleştirir.
